@@ -1,11 +1,13 @@
 import { redirect } from "next/navigation";
+import { getServerSession } from "@/lib/auth/session";
 import { getSettingsData } from "@/lib/data/settings";
 import { SettingsPanel } from "@/components/settings/settings-panel";
 
 export default async function SettingsPage() {
+  const session = await getServerSession();
   const data = await getSettingsData();
 
-  if (!data) {
+  if (!data || !session) {
     redirect("/login");
   }
 
@@ -22,6 +24,7 @@ export default async function SettingsPage() {
       <SettingsPanel
         profile={data.profile}
         preferences={data.preferences}
+        userId={session.userId}
       />
     </div>
   );

@@ -95,7 +95,7 @@ export function ActivityAnalytics({
 
   if (active.length === 0) {
     return (
-      <Card className="border-stone-200 bg-stone-50/80">
+      <Card data-onboarding="activities-heatmap" className="border-stone-200 bg-stone-50/80">
         <CardHeader>
           <CardTitle>Activity Trends</CardTitle>
           <CardDescription>Add activities to see heatmaps and trends.</CardDescription>
@@ -170,7 +170,7 @@ export function ActivityAnalytics({
   })();
 
   return (
-    <Card className="border-stone-200 bg-stone-50/80">
+    <Card data-onboarding="activities-heatmap" className="border-stone-200 bg-stone-50/80">
       <CardHeader>
         <CardTitle>Activity Trends</CardTitle>
         <CardDescription>

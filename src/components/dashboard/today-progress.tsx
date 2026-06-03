@@ -23,7 +23,7 @@ export function TodayProgress({
   const percentage = Math.round(rate * 100);
 
   return (
-    <Card className="border-stone-200 bg-stone-50/80">
+    <Card data-onboarding="today-progress" className="border-stone-200 bg-stone-50/80">
       <CardHeader className="pb-2">
         <CardDescription>{today}</CardDescription>
         <CardTitle className="text-2xl">Today&apos;s Progress</CardTitle>

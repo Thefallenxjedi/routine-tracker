@@ -16,7 +16,10 @@ export function DashboardHeader({
   const percentage = Math.round(rate * 100);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-900 px-5 py-6 text-white shadow-lg shadow-emerald-900/20">
+    <div
+      data-onboarding="banner"
+      className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-900 px-5 py-6 text-white shadow-lg shadow-emerald-900/20"
+    >
       <div className="absolute -right-6 -top-6 size-32 rounded-full bg-white/10" />
       <div className="absolute -bottom-8 right-12 size-24 rounded-full bg-white/5" />
       <div className="relative">

@@ -155,7 +155,7 @@ export function WeightTracker({
       : 0;
 
   return (
-    <Card className="border-stone-200 bg-stone-50/80">
+    <Card data-onboarding="weight" className="border-stone-200 bg-stone-50/80">
       <CardHeader>
         <div className="flex items-center gap-2">
           <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-100">

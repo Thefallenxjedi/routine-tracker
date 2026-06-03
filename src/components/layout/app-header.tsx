@@ -10,10 +10,15 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/activities", label: "Activities", icon: ListChecks },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
+  { href: "/", label: "Dashboard", icon: LayoutDashboard, tourId: undefined },
+  {
+    href: "/activities",
+    label: "Activities",
+    icon: ListChecks,
+    tourId: "nav-activities",
+  },
+  { href: "/settings", label: "Settings", icon: Settings, tourId: "nav-settings" },
+] as const;
 
 export function AppHeader() {
   const pathname = usePathname();
@@ -34,10 +39,11 @@ export function AppHeader() {
             <RoutineLogo size="sm" />
           </Link>
           <nav className="hidden items-center gap-1 md:flex">
-            {navItems.map(({ href, label, icon: Icon }) => (
+            {navItems.map(({ href, label, icon: Icon, tourId }) => (
               <Link
                 key={href}
                 href={href}
+                data-onboarding={tourId}
                 className={cn(
                   "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                   pathname === href

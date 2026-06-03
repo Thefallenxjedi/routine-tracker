@@ -106,7 +106,7 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
 
   if (activities.length === 0) {
     return (
-      <Card className="border-stone-200 bg-stone-50/80">
+      <Card data-onboarding="daily-checklist" className="border-stone-200 bg-stone-50/80">
         <CardHeader>
           <CardTitle>Daily Checklist</CardTitle>
           <CardDescription>No activities yet</CardDescription>
@@ -124,7 +124,7 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
   }
 
   return (
-    <Card className="border-stone-200 bg-stone-50/80">
+    <Card data-onboarding="daily-checklist" className="border-stone-200 bg-stone-50/80">
       <CardHeader>
         <CardTitle>Daily Checklist</CardTitle>
         <CardDescription>

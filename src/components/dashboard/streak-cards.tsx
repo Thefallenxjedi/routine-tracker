@@ -16,7 +16,7 @@ export function StreakCards({ streaks }: StreakCardsProps) {
   const activeStreaks = streaks.filter((s) => s.currentStreak > 0);
 
   return (
-    <Card className="border-stone-200 bg-stone-50/80">
+    <Card data-onboarding="streaks" className="border-stone-200 bg-stone-50/80">
       <CardHeader>
         <CardTitle>Current Streaks</CardTitle>
         <CardDescription>Consecutive days completed per activity</CardDescription>

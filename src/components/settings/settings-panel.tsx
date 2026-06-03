@@ -4,8 +4,11 @@ import { useState, useTransition } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Calendar, Mail, User } from "lucide-react";
+import { useOnboarding } from "@/components/onboarding/onboarding-context";
 import { updateWeightAutomatic } from "@/lib/actions/settings";
+import { onboardingStorageKey } from "@/lib/onboarding/steps";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -22,9 +25,11 @@ const PREFS_STORAGE_KEY = "routine-weight-automatic";
 type SettingsPanelProps = {
   profile: SettingsProfile;
   preferences: UserPreferences;
+  userId: string;
 };
 
-export function SettingsPanel({ profile, preferences }: SettingsPanelProps) {
+export function SettingsPanel({ profile, preferences, userId }: SettingsPanelProps) {
+  const { startTour } = useOnboarding();
   const [weightAutomatic, setWeightAutomatic] = useState(
     preferences.weight_automatic
   );
@@ -58,9 +63,35 @@ export function SettingsPanel({ profile, preferences }: SettingsPanelProps) {
     });
   }
 
+  function handleReplayTour() {
+    try {
+      localStorage.removeItem(onboardingStorageKey(userId));
+    } catch {
+      // ignore
+    }
+    startTour();
+  }
+
   return (
     <div className="space-y-6">
       <Card className="border-stone-200 bg-stone-50/80">
+        <CardHeader>
+          <CardTitle>App tour</CardTitle>
+          <CardDescription>Walk through Routine again on phone or desktop</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            type="button"
+            variant="outline"
+            className="border-emerald-300 text-emerald-800"
+            onClick={handleReplayTour}
+          >
+            Replay onboarding tour
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card data-onboarding="settings-account" className="border-stone-200 bg-stone-50/80">
         <CardHeader>
           <CardTitle>Account</CardTitle>
           <CardDescription>Your Google sign-in details</CardDescription>
@@ -99,7 +130,7 @@ export function SettingsPanel({ profile, preferences }: SettingsPanelProps) {
         </CardContent>
       </Card>
 
-      <Card className="border-stone-200 bg-stone-50/80">
+      <Card data-onboarding="settings-weight" className="border-stone-200 bg-stone-50/80">
         <CardHeader>
           <CardTitle>Weight tracker</CardTitle>
           <CardDescription>How logging works on your dashboard</CardDescription>

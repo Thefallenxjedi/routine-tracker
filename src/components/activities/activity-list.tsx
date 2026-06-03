@@ -47,6 +47,7 @@ export function ActivityList({
           </p>
         </div>
         <Button
+          data-onboarding="activities-new"
           onClick={() => setCreateOpen(true)}
           className="bg-emerald-600 hover:bg-emerald-700"
         >
