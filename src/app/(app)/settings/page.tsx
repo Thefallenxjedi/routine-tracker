@@ -24,7 +24,6 @@ export default async function SettingsPage() {
       <SettingsPanel
         profile={data.profile}
         preferences={data.preferences}
-        userId={session.userId}
       />
     </div>
   );

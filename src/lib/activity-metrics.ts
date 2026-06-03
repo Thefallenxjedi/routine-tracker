@@ -140,8 +140,11 @@ export function isActivityLogDone(
   activity: Activity
 ): boolean {
   if (!log) return false;
-  if (activity.tracking_type === "numeric") {
-    return log.metric_value != null && Number(log.metric_value) > 0;
+  if (isNumericActivity(activity)) {
+    if (log.metric_value != null && Number(log.metric_value) > 0) {
+      return true;
+    }
+    return log.completed;
   }
   return log.completed;
 }
@@ -153,7 +156,10 @@ export function formatMetricValue(value: number, activity: Activity): string {
 }
 
 export function isNumericActivity(activity: Activity): boolean {
-  return activity.tracking_type === "numeric";
+  return (
+    activity.tracking_type === "numeric" ||
+    (!!activity.metric_key && activity.metric_key !== "yes_no")
+  );
 }
 
 export function getActivityMetricTrendPoints(

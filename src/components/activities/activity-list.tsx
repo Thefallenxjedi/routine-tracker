@@ -25,6 +25,25 @@ type ActivityListProps = {
   overallStats: DayStat[];
 };
 
+function AddActivityButton({
+  onClick,
+  className,
+}: {
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <Button
+      type="button"
+      onClick={onClick}
+      className={className ?? "bg-emerald-600 hover:bg-emerald-700"}
+    >
+      <Plus className="size-4" />
+      New activity
+    </Button>
+  );
+}
+
 export function ActivityList({
   active,
   archived,
@@ -38,33 +57,14 @@ export function ActivityList({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-emerald-950">
-            Activities
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Manage activities and view monthly heatmaps
-          </p>
-        </div>
-        <Button
-          data-onboarding="activities-new"
-          onClick={() => setCreateOpen(true)}
-          className="bg-emerald-600 hover:bg-emerald-700"
-        >
-          <Plus className="size-4" />
-          New
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-emerald-950">
+          Activities
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Manage activities and view monthly heatmaps
+        </p>
       </div>
-
-      <MetricsReference />
-
-      <ActivityAnalytics
-        activities={activities}
-        logs={logs}
-        monthDays={monthDays}
-        overallStats={overallStats}
-      />
 
       <Card className="border-stone-200 bg-stone-50/80">
         <CardHeader>
@@ -75,21 +75,45 @@ export function ActivityList({
         </CardHeader>
         <CardContent className="space-y-2">
           {active.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No active activities. Create one to get started.
-            </p>
-          ) : (
-            active.map((activity) => (
-              <ActivityRow
-                key={activity.id}
-                activity={activity}
-                logs={logs}
-                onEdit={setEditing}
+            <div className="flex flex-col items-center gap-4 py-8">
+              <p className="text-center text-sm text-muted-foreground">
+                No active activities yet. Create your first one to start tracking.
+              </p>
+              <AddActivityButton
+                onClick={() => setCreateOpen(true)}
+                className="bg-emerald-600 hover:bg-emerald-700"
               />
-            ))
+            </div>
+          ) : (
+            <>
+              {active.map((activity) => (
+                <ActivityRow
+                  key={activity.id}
+                  activity={activity}
+                  logs={logs}
+                  onEdit={setEditing}
+                />
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-1 w-full gap-2 border-dashed border-emerald-300 text-emerald-800 hover:bg-emerald-50"
+                onClick={() => setCreateOpen(true)}
+              >
+                <Plus className="size-4" />
+                Add activity
+              </Button>
+            </>
           )}
         </CardContent>
       </Card>
+
+      <ActivityAnalytics
+        activities={activities}
+        logs={logs}
+        monthDays={monthDays}
+        overallStats={overallStats}
+      />
 
       {archived.length > 0 && (
         <Card className="border-stone-200 bg-stone-50/80">
@@ -113,6 +137,8 @@ export function ActivityList({
           </CardContent>
         </Card>
       )}
+
+      <MetricsReference />
 
       <ActivityFormDialog open={createOpen} onOpenChange={setCreateOpen} />
       <ActivityFormDialog

@@ -77,7 +77,7 @@ export async function saveActivityLog(
       return { error: error.message };
     }
 
-    return { success: true };
+    return { success: true, completed, metric_value };
   } catch {
     return { error: "Unauthorized" };
   }

@@ -25,7 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ACTIVITY_CATEGORIES,
   type Activity,
@@ -107,44 +106,37 @@ export function ActivityFormDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs defaultValue="details" className="py-2">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="metric">Metric</TabsTrigger>
-            </TabsList>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                placeholder="e.g. Run, Walk, Read"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Select
+                value={category}
+                onValueChange={(v) => setCategory(v as ActivityCategory)}
+              >
+                <SelectTrigger id="category" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ACTIVITY_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            <TabsContent value="details" className="mt-4 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  placeholder="e.g. Run, Walk, Read"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Select
-                  value={category}
-                  onValueChange={(v) => setCategory(v as ActivityCategory)}
-                >
-                  <SelectTrigger id="category" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ACTIVITY_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="metric" className="mt-4 space-y-4">
+            <div className="border-t border-stone-200 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="metric">Tracking metric</Label>
                 <Select
@@ -172,7 +164,7 @@ export function ActivityFormDialog({
               </div>
 
               {isCustom && (
-                <div className="space-y-2">
+                <div className="mt-3 space-y-2">
                   <Label htmlFor="custom-unit">Custom unit label</Label>
                   <Input
                     id="custom-unit"
@@ -184,22 +176,24 @@ export function ActivityFormDialog({
                 </div>
               )}
 
-              {selectedPreset && selectedPreset.trackingType === "numeric" && !isCustom && (
-                <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
-                  On your daily checklist you will enter a number in{" "}
-                  <strong>{selectedPreset.unit}</strong>.
-                </p>
-              )}
+              {selectedPreset &&
+                selectedPreset.trackingType === "numeric" &&
+                !isCustom && (
+                  <p className="mt-2 text-xs text-emerald-800">
+                    Daily checklist: enter a number in{" "}
+                    <strong>{selectedPreset.unit}</strong>.
+                  </p>
+                )}
 
               {metricKey === "yes_no" && (
-                <p className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-muted-foreground">
-                  On your daily checklist you will tap a checkmark when done.
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Daily checklist: tap the checkmark when done.
                 </p>
               )}
-            </TabsContent>
-          </Tabs>
+            </div>
+          </div>
 
-          <DialogFooter className="mt-2">
+          <DialogFooter>
             <Button
               type="button"
               variant="outline"
