@@ -140,10 +140,13 @@ export function WeightTracker({
           .join(" ")
       : "";
 
-  const singleY =
+  const singleBarHeightPct =
     chartData.length === 1
-      ? 100 - ((chartData[0].weight_kg - chartMin) / chartRange) * 88 - 6
-      : 50;
+      ? Math.max(
+          28,
+          Math.min(92, ((chartData[0].weight_kg - chartMin) / chartRange) * 88 + 12)
+        )
+      : 0;
 
   return (
     <Card className="border-stone-200 bg-stone-50/80">
@@ -207,20 +210,36 @@ export function WeightTracker({
               )}
             </div>
             <div className="rounded-lg border border-stone-200 bg-stone-100/50 p-3">
-              <svg
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-                className="h-44 w-full"
-                aria-hidden
-              >
-                <defs>
-                  <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                {chartData.length > 1 ? (
-                  <>
+              {chartData.length === 1 ? (
+                <div
+                  className="flex h-44 flex-col items-center justify-end"
+                  aria-label={`Weight ${chartData[0].weight_kg} kg on ${formatDisplayDate(chartData[0].date)}`}
+                >
+                  <p className="mb-2 text-lg font-bold tabular-nums text-emerald-800">
+                    {chartData[0].weight_kg} kg
+                  </p>
+                  <div
+                    className="w-20 rounded-t-lg bg-gradient-to-t from-emerald-700 to-emerald-500 shadow-md shadow-emerald-900/10 transition-all"
+                    style={{ height: `${singleBarHeightPct}%` }}
+                  />
+                  <p className="mt-3 text-[10px] font-medium text-muted-foreground">
+                    {formatDisplayDate(chartData[0].date)}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <svg
+                    viewBox="0 0 100 100"
+                    preserveAspectRatio="none"
+                    className="h-44 w-full"
+                    aria-hidden
+                  >
+                    <defs>
+                      <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
                     <path
                       d={`${linePath} L 100 100 L 0 100 Z`}
                       fill={`url(#${gradientId})`}
@@ -247,39 +266,13 @@ export function WeightTracker({
                         />
                       );
                     })}
-                  </>
-                ) : (
-                  <>
-                    <line
-                      x1="0"
-                      y1={singleY}
-                      x2="100"
-                      y2={singleY}
-                      stroke="#059669"
-                      strokeWidth="1"
-                      strokeDasharray="4 3"
-                      vectorEffect="non-scaling-stroke"
-                    />
-                    <circle
-                      cx="50"
-                      cy={singleY}
-                      r="4"
-                      fill="#059669"
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  </>
-                )}
-              </svg>
-              <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-                <span>{formatDisplayDate(chartData[0].date)}</span>
-                {chartData.length > 1 ? (
-                  <span>{formatDisplayDate(chartData[chartData.length - 1].date)}</span>
-                ) : (
-                  <span className="font-medium text-emerald-700">
-                    {chartData[0].weight_kg} kg
-                  </span>
-                )}
-              </div>
+                  </svg>
+                  <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
+                    <span>{formatDisplayDate(chartData[0].date)}</span>
+                    <span>{formatDisplayDate(chartData[chartData.length - 1].date)}</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         ) : (
