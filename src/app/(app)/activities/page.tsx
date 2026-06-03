@@ -8,10 +8,7 @@ export default async function ActivitiesPage() {
     <ActivityList
       active={data.active}
       archived={data.archived}
-      activities={data.activities}
       logs={data.logs}
-      monthDays={data.monthDays}
-      overallStats={data.overallStats}
     />
   );
 }

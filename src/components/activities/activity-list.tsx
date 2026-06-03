@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { MetricsReference } from "@/components/activities/metrics-reference";
-import { ActivityAnalytics } from "@/components/dashboard/activity-analytics";
 import { ActivityFormDialog } from "@/components/activities/activity-form-dialog";
 import { ActivityRow } from "@/components/activities/activity-row";
 import { Button } from "@/components/ui/button";
@@ -14,15 +13,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { Activity, ActivityLog, DayStat } from "@/types/database";
+import type { Activity, ActivityLog } from "@/types/database";
 
 type ActivityListProps = {
   active: Activity[];
   archived: Activity[];
-  activities: Activity[];
   logs: ActivityLog[];
-  monthDays: string[];
-  overallStats: DayStat[];
 };
 
 function AddActivityButton({
@@ -47,10 +43,7 @@ function AddActivityButton({
 export function ActivityList({
   active,
   archived,
-  activities,
   logs,
-  monthDays,
-  overallStats,
 }: ActivityListProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<Activity | null>(null);
@@ -62,7 +55,7 @@ export function ActivityList({
           Activities
         </h1>
         <p className="text-sm text-muted-foreground">
-          Manage activities and view monthly heatmaps
+          Create and manage your daily activities
         </p>
       </div>
 
@@ -107,13 +100,6 @@ export function ActivityList({
           )}
         </CardContent>
       </Card>
-
-      <ActivityAnalytics
-        activities={activities}
-        logs={logs}
-        monthDays={monthDays}
-        overallStats={overallStats}
-      />
 
       {archived.length > 0 && (
         <Card className="border-stone-200 bg-stone-50/80">

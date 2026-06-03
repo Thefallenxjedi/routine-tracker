@@ -158,16 +158,17 @@ export async function getDashboardData() {
 
 export async function getActivitiesPageData() {
   const { supabase, userId } = await getDataClient();
-  const monthRange = getMonthRange();
+  const today = getTodayString();
+  const logStart = format(
+    subDays(parseISO(`${today}T12:00:00`), 60),
+    "yyyy-MM-dd"
+  );
 
   if (!userId) {
     return {
       active: [],
       archived: [],
-      activities: [],
       logs: [],
-      monthDays: monthRange.days,
-      overallStats: [],
     };
   }
 
@@ -180,8 +181,8 @@ export async function getActivitiesPageData() {
     supabase
       .from("activity_logs")
       .select("*")
-      .gte("date", monthRange.start)
-      .lte("date", monthRange.end),
+      .gte("date", logStart)
+      .lte("date", today),
   ]);
 
   if (activitiesResult.error) throw activitiesResult.error;
@@ -195,15 +196,9 @@ export async function getActivitiesPageData() {
     .map((row) => normalizeActivityLog(row as Record<string, unknown>))
     .filter((l) => activityIds.has(l.activity_id));
 
-  const activeActivities = activities.filter((a) => a.is_active);
-  const monthlyStats = computeDayStats(activeActivities, logs, monthRange.days);
-
   return {
-    active: activeActivities,
+    active: activities.filter((a) => a.is_active),
     archived: activities.filter((a) => !a.is_active),
-    activities,
     logs,
-    monthDays: monthRange.days,
-    overallStats: monthlyStats,
   };
 }
