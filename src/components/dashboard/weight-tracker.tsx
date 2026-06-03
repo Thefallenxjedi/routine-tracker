@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Scale } from "lucide-react";
+import { Pencil, Scale } from "lucide-react";
 import { saveWeight } from "@/lib/actions/weight";
 import { formatDisplayDate } from "@/lib/utils/dates";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ export function WeightTracker({
   const [isPending, startTransition] = useTransition();
   const [localLogs, setLocalLogs] = useState(recentLogs);
   const [loggedToday, setLoggedToday] = useState<WeightLog | undefined>();
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     setLocalLogs(recentLogs);
@@ -57,7 +58,8 @@ export function WeightTracker({
     try {
       const stored = localStorage.getItem(storageKey(today));
       if (stored) {
-        setLoggedToday(JSON.parse(stored) as WeightLog);
+        const parsed = JSON.parse(stored) as WeightLog;
+        setLoggedToday(parsed);
         return;
       }
     } catch {
@@ -67,7 +69,8 @@ export function WeightTracker({
   }, [recentLogs, todayWeight, today, weightAutomatic]);
 
   const hasLoggedToday = !!loggedToday;
-  const showForm = !weightAutomatic || !hasLoggedToday;
+  const showForm =
+    !weightAutomatic || !hasLoggedToday || isEditing;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -105,7 +108,10 @@ export function WeightTracker({
         }
       }
       setWeight("");
-      toast.success("Weight saved for today");
+      setIsEditing(false);
+      toast.success(
+        hasLoggedToday ? "Weight updated for today" : "Weight saved for today"
+      );
       router.refresh();
     });
   }
@@ -170,6 +176,27 @@ export function WeightTracker({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {hasLoggedToday && weightAutomatic && !isEditing && (
+          <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
+            <p className="text-sm font-medium text-emerald-900">
+              Today: <span className="tabular-nums">{loggedToday.weight_kg} kg</span>
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-emerald-300 bg-white text-emerald-800 hover:bg-emerald-100"
+              onClick={() => {
+                setWeight(String(loggedToday.weight_kg));
+                setIsEditing(true);
+              }}
+            >
+              <Pencil className="size-3.5" />
+              Edit
+            </Button>
+          </div>
+        )}
+
         {showForm && (
           <form onSubmit={handleSubmit} className="flex gap-2">
             <div className="flex-1">
@@ -188,13 +215,29 @@ export function WeightTracker({
                 className="border-stone-300 bg-white"
               />
             </div>
-            <Button
-              type="submit"
-              disabled={isPending}
-              className="bg-emerald-600 hover:bg-emerald-700"
-            >
-              {isPending ? "Saving..." : "Save"}
-            </Button>
+            <div className="flex gap-2">
+              {isEditing && weightAutomatic && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isPending}
+                  className="border-stone-300"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setWeight("");
+                  }}
+                >
+                  Cancel
+                </Button>
+              )}
+              <Button
+                type="submit"
+                disabled={isPending}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                {isPending ? "Saving..." : hasLoggedToday ? "Update" : "Save"}
+              </Button>
+            </div>
           </form>
         )}
 

@@ -17,10 +17,7 @@ export default function LoginPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-emerald-950/85 via-emerald-900/75 to-emerald-950/90" />
         <div className="relative flex min-h-[100dvh] flex-col items-center justify-center px-5 py-10">
-          <RoutineLogo
-            size="lg"
-            className="mb-8 [&_span]:text-white [&_svg]:text-emerald-300"
-          />
+          <RoutineLogo size="lg" className="mb-8 [&_span]:text-white" />
           <div className="w-full max-w-sm">
             <LoginForm />
           </div>
@@ -39,10 +36,7 @@ export default function LoginPage() {
           />
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/80 via-emerald-900/50 to-transparent" />
           <div className="absolute bottom-10 left-10 max-w-sm text-white">
-            <RoutineLogo
-              size="lg"
-              className="mb-4 [&_span]:text-white [&_svg]:text-emerald-300"
-            />
+            <RoutineLogo size="lg" className="mb-4 [&_span]:text-white" />
             <p className="text-lg font-medium leading-relaxed text-emerald-50">
               Track habits, build streaks, and see your progress — one day at a
               time.

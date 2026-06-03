@@ -17,7 +17,7 @@ Quick map of where weight logging lives and what each piece does.
 
 ## Automatic vs manual (Settings toggle)
 
-- **Automatic ON** (`weight_automatic: true`): After save, the form hides for the rest of the day. Uses `localStorage` key `routine-weight-{date}` as backup.
+- **Automatic ON** (`weight_automatic: true`): After save, the form hides until you tap **Edit** (you can still change today’s weight). Uses `localStorage` key `routine-weight-{date}` as backup.
 - **Automatic OFF** (`weight_automatic: false`): Form stays visible; you can edit and save again anytime.
 
 To change this behavior, edit `showForm` in `weight-tracker.tsx`:

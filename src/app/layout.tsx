@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AppSplash } from "@/components/layout/app-splash";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -17,8 +18,8 @@ export const metadata: Metadata = {
   title: "Routine — Activity Tracker",
   description: "Track daily activities and habits with simple yes/no completion",
   icons: {
-    icon: "/icon.svg",
-    apple: "/icon.svg",
+    icon: "/logo.png",
+    apple: "/logo.png",
   },
 };
 
@@ -33,6 +34,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <AppSplash />
         {children}
         <Toaster richColors position="top-center" />
       </body>

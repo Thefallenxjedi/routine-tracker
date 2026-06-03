@@ -1,4 +1,4 @@
-import { Activity } from "lucide-react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 type RoutineLogoProps = {
@@ -8,9 +8,9 @@ type RoutineLogoProps = {
 };
 
 const sizeMap = {
-  sm: { icon: "size-5", text: "text-base" },
-  md: { icon: "size-6", text: "text-xl" },
-  lg: { icon: "size-8", text: "text-2xl" },
+  sm: { img: 28, text: "text-base" },
+  md: { img: 32, text: "text-xl" },
+  lg: { img: 48, text: "text-2xl" },
 };
 
 export function RoutineLogo({
@@ -21,8 +21,15 @@ export function RoutineLogo({
   const s = sizeMap[size];
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <Activity className={cn("shrink-0 text-emerald-600", s.icon)} />
+    <div className={cn("flex items-center gap-2.5", className)}>
+      <Image
+        src="/logo.png"
+        alt="Routine"
+        width={s.img}
+        height={s.img}
+        className="shrink-0 rounded-lg"
+        priority={size === "lg"}
+      />
       {showText && (
         <span className={cn("font-semibold tracking-tight text-emerald-950", s.text)}>
           Routine
