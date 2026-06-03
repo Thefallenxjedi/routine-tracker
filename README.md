@@ -4,7 +4,7 @@ Track daily activities and habits with simple yes/no completion. Built with Next
 
 ## Features
 
-- **Magic link auth** — passwordless email login via Supabase
+- **Email + password auth** — sign up and sign in via Supabase
 - **Daily checklist** — mark activities complete with optimistic UI
 - **Streaks** — per-activity consecutive day tracking
 - **Analytics** — daily progress, weekly bar chart, monthly heatmap
@@ -30,7 +30,7 @@ npm install
 
 1. Create a project at [supabase.com](https://supabase.com)
 2. Run the migration in `supabase/migrations/001_initial_schema.sql` via the SQL Editor
-3. Enable Email auth (Magic Link) under Authentication → Providers → Email
+3. Enable Email auth under Authentication → Providers → Email, and turn on **Email + Password**
 
 ### 3. Configure environment
 
@@ -45,14 +45,14 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-### 4. Configure auth redirect URLs
+### 4. Configure auth URLs (optional, for email confirmation)
 
-In Supabase Dashboard → Authentication → URL Configuration:
+If email confirmation is enabled in Supabase, add these under Authentication → URL Configuration:
 
 | Setting | Value |
 |---------|-------|
 | Site URL | `http://localhost:3000` (dev) or your Vercel URL (prod) |
-| Redirect URLs | `http://localhost:3000/auth/callback`, `http://localhost:3001/auth/callback`, `https://your-app.vercel.app/auth/callback` |
+| Redirect URLs | `http://localhost:3000/auth/callback`, `http://localhost:3001/auth/callback`, `https://routine-tracker-tawny.vercel.app/auth/callback` |
 
 **Note:** If port 3000 is busy, Next.js uses 3001. Add both redirect URLs in Supabase, or run `npm run dev -- -p 3000` after freeing port 3000.
 
@@ -81,7 +81,7 @@ src/
 ├── app/
 │   ├── (app)/          # Authenticated routes (dashboard, activities)
 │   ├── (auth)/         # Login page
-│   └── auth/callback/  # Magic link handler
+│   └── auth/callback/  # Email confirmation handler (if enabled)
 ├── components/
 │   ├── dashboard/      # Progress, checklist, streaks, charts
 │   ├── activities/     # CRUD UI

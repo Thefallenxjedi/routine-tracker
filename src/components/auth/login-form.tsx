@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -15,108 +16,96 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-function getAuthErrorMessage(error: unknown, redirectUrl: string): string {
+type AuthMode = "sign-in" | "sign-up";
+
+function getAuthErrorMessage(error: unknown): string {
   if (error instanceof Error) {
-    const message = error.message;
-
-    if (message.includes("Missing Supabase credentials")) {
-      return message;
+    if (error.message.includes("Missing Supabase credentials")) {
+      return error.message;
     }
 
     if (
-      message.toLowerCase().includes("fetch") ||
-      message.toLowerCase().includes("network")
+      error.message.toLowerCase().includes("fetch") ||
+      error.message.toLowerCase().includes("network")
     ) {
-      return "Could not reach Supabase. Check your project URL, ensure the project is not paused, and restart npm run dev.";
+      return "Could not reach Supabase. Check your project URL and ensure the project is not paused.";
     }
 
-    if (
-      message.toLowerCase().includes("redirect") ||
-      message.toLowerCase().includes("not allowed")
-    ) {
-      return `Add this URL in Supabase → Authentication → URL Configuration → Redirect URLs: ${redirectUrl}`;
-    }
-
-    return message;
+    return error.message;
   }
 
   return "Something went wrong. Please try again.";
 }
 
 export function LoginForm() {
+  const router = useRouter();
+  const [mode, setMode] = useState<AuthMode>("sign-in");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim()) return;
-
-    const redirectUrl = `${window.location.origin}/auth/callback`;
+    if (!email.trim() || !password) return;
 
     setLoading(true);
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: {
-          emailRedirectTo: redirectUrl,
-        },
-      });
 
-      if (error) {
-        if (
-          error.message.toLowerCase().includes("redirect") ||
-          error.message.toLowerCase().includes("not allowed")
-        ) {
-          toast.error(
-            `Add this redirect URL in Supabase: ${redirectUrl}`,
-            { duration: 8000 }
-          );
-        } else {
+      if (mode === "sign-in") {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+
+        if (error) {
           toast.error(error.message);
+          return;
         }
+
+        toast.success("Signed in");
+        router.push("/");
+        router.refresh();
         return;
       }
 
-      setSent(true);
-      toast.success("Check your email for a login link");
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      if (data.session) {
+        toast.success("Account created");
+        router.push("/");
+        router.refresh();
+        return;
+      }
+
+      toast.success("Account created. Check your email to confirm, then sign in.");
+      setMode("sign-in");
+      setPassword("");
     } catch (error) {
-      toast.error(getAuthErrorMessage(error, redirectUrl), { duration: 8000 });
+      toast.error(getAuthErrorMessage(error));
     } finally {
       setLoading(false);
     }
   }
 
-  if (sent) {
-    return (
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Check your email</CardTitle>
-          <CardDescription>
-            We sent a magic link to <strong>{email}</strong>. Click the link
-            to sign in.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => setSent(false)}
-          >
-            Use a different email
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
+  const isSignIn = mode === "sign-in";
 
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Welcome back</CardTitle>
+        <CardTitle>{isSignIn ? "Welcome back" : "Create an account"}</CardTitle>
         <CardDescription>
-          Sign in with a magic link sent to your email.
+          {isSignIn
+            ? "Sign in with your email and password."
+            : "Sign up to start tracking your daily activities."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -133,17 +122,45 @@ export function LoginForm() {
               autoComplete="email"
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder={isSignIn ? "Your password" : "At least 6 characters"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              autoComplete={isSignIn ? "current-password" : "new-password"}
+            />
+          </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? (
               <>
                 <Loader2 className="mr-2 size-4 animate-spin" />
-                Sending link...
+                {isSignIn ? "Signing in..." : "Creating account..."}
               </>
+            ) : isSignIn ? (
+              "Sign in"
             ) : (
-              "Send magic link"
+              "Create account"
             )}
           </Button>
         </form>
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          {isSignIn ? "Don't have an account?" : "Already have an account?"}{" "}
+          <button
+            type="button"
+            className="font-medium text-emerald-600 hover:underline"
+            onClick={() => {
+              setMode(isSignIn ? "sign-up" : "sign-in");
+              setPassword("");
+            }}
+          >
+            {isSignIn ? "Sign up" : "Sign in"}
+          </button>
+        </p>
       </CardContent>
     </Card>
   );
