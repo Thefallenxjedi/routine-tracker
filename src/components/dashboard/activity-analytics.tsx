@@ -23,15 +23,16 @@ type ActivityAnalyticsProps = {
 
 const ALL_FILTER = "__all__";
 
-function getCumulativeHeatColor(
+function getGithubHeatColor(
   rate: number,
   isFuture: boolean,
   hasData: boolean
 ): string {
   if (isFuture || !hasData) return "bg-transparent";
   if (rate === 0) return "bg-white ring-1 ring-inset ring-stone-200";
-  if (rate < 0.34) return "bg-emerald-200";
-  if (rate < 0.67) return "bg-emerald-500";
+  if (rate < 0.25) return "bg-emerald-200";
+  if (rate < 0.5) return "bg-emerald-400";
+  if (rate < 0.75) return "bg-emerald-500";
   return "bg-emerald-700";
 }
 
@@ -83,12 +84,21 @@ export function ActivityAnalytics({
         .reduce((sum, s) => sum + s.completed, 0)
     : activityPoints.filter((p) => p.completed && p.date <= today).length;
 
+  const eligibleDays = isAllView
+    ? overallStats.filter((s) => s.date <= today && s.total > 0).length
+    : activityPoints.filter(
+        (p) =>
+          p.date <= today &&
+          selected &&
+          p.date >= selected.created_at.slice(0, 10)
+      ).length;
+
   if (active.length === 0) {
     return (
       <Card className="border-stone-200 bg-stone-50/80">
         <CardHeader>
-          <CardTitle>Monthly Heatmap</CardTitle>
-          <CardDescription>Add activities to see heatmaps.</CardDescription>
+          <CardTitle>Activity Trends</CardTitle>
+          <CardDescription>Add activities to see heatmaps and trends.</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -113,11 +123,11 @@ export function ActivityAnalytics({
         const isFuture = stat.date > today;
         cells.push({
           date: stat.date,
-          label: `${formatDisplayDate(stat.date)} — ${stat.completed}/${stat.total} done (cumulative)`,
-          colorClass: getCumulativeHeatColor(
+          label: `${formatDisplayDate(stat.date)} — ${stat.completed}/${stat.total} done`,
+          colorClass: getGithubHeatColor(
             stat.rate,
             isFuture,
-            stat.date <= today && stat.total > 0
+            stat.date <= today
           ),
         });
       }
@@ -154,12 +164,18 @@ export function ActivityAnalytics({
     })
     .join(" ");
 
+  const totalCumulative = (() => {
+    const idx = overallStats.findLastIndex((s) => s.date <= today);
+    return idx >= 0 ? cumulativeLineValues[idx] : 0;
+  })();
+
   return (
     <Card className="border-stone-200 bg-stone-50/80">
       <CardHeader>
-        <CardTitle>Monthly Heatmap</CardTitle>
+        <CardTitle>Activity Trends</CardTitle>
         <CardDescription>
-          All = cumulative across activities · each pill = that activity only
+          Filter by activity — GitHub-style heatmap and completion trend this
+          month
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -174,7 +190,7 @@ export function ActivityAnalytics({
                 : "border-stone-300 bg-white text-emerald-800 hover:bg-emerald-50"
             )}
           >
-            All (cumulative)
+            All
           </button>
           {active.map((activity) => (
             <button
@@ -196,7 +212,7 @@ export function ActivityAnalytics({
         <div className="flex items-center justify-between rounded-lg border border-stone-200 bg-stone-100 px-4 py-3">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {isAllView ? "Cumulative completions" : "Days completed"}
+              {isAllView ? "Cumulative score" : "Days completed"}
             </p>
             <p className="text-3xl font-bold tabular-nums text-emerald-900">
               {cumulativeScore}
@@ -212,7 +228,7 @@ export function ActivityAnalytics({
 
         <div>
           <p className="mb-2 text-xs font-medium text-muted-foreground">
-            {isAllView ? "Cumulative heatmap (all activities)" : "Daily heatmap"}
+            Monthly heatmap
           </p>
           <div className="mb-1 grid grid-cols-7 gap-1.5">
             {dayLabels.map((label) => (
@@ -234,7 +250,7 @@ export function ActivityAnalytics({
                   key={cell.date}
                   title={cell.label}
                   className={cn(
-                    "aspect-square rounded-sm",
+                    "aspect-square rounded-sm transition-colors",
                     cell.colorClass,
                     cell.date === today &&
                       "ring-2 ring-emerald-700 ring-offset-1"
@@ -243,12 +259,26 @@ export function ActivityAnalytics({
               );
             })}
           </div>
+          {isAllView && (
+            <div className="mt-3 flex items-center justify-end gap-1 text-[10px] text-muted-foreground">
+              <span>Less</span>
+              <div className="size-3 rounded-sm bg-white ring-1 ring-stone-200" />
+              <div className="size-3 rounded-sm bg-emerald-200" />
+              <div className="size-3 rounded-sm bg-emerald-400" />
+              <div className="size-3 rounded-sm bg-emerald-500" />
+              <div className="size-3 rounded-sm bg-emerald-700" />
+              <span>More</span>
+            </div>
+          )}
         </div>
 
         {isAllView && (
           <div>
             <p className="mb-2 text-xs font-medium text-muted-foreground">
-              Cumulative trend line
+              Cumulative trend
+              {eligibleDays > 0 && (
+                <span className="ml-1 text-emerald-700">(max {maxLine})</span>
+              )}
             </p>
             <div className="rounded-lg border border-stone-200 bg-white p-3">
               <svg
@@ -263,26 +293,26 @@ export function ActivityAnalytics({
                     <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
                   </linearGradient>
                 </defs>
-                <path
-                  d={`${linePath} L 100 100 L 0 100 Z`}
-                  fill={`url(#${gradientId})`}
-                />
-                <path
-                  d={linePath}
-                  fill="none"
-                  stroke="#059669"
-                  strokeWidth="2.5"
-                  vectorEffect="non-scaling-stroke"
-                />
+                {cumulativeLineValues.length > 0 && (
+                  <>
+                    <path
+                      d={`${linePath} L 100 100 L 0 100 Z`}
+                      fill={`url(#${gradientId})`}
+                    />
+                    <path
+                      d={linePath}
+                      fill="none"
+                      stroke="#059669"
+                      strokeWidth="2.5"
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  </>
+                )}
               </svg>
               <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
                 <span>{formatDayLabel(monthDays[0])}</span>
                 <span className="font-medium text-emerald-700">
-                  Total:{" "}
-                  {(() => {
-                    const idx = overallStats.findLastIndex((s) => s.date <= today);
-                    return idx >= 0 ? cumulativeLineValues[idx] : 0;
-                  })()}
+                  Total: {totalCumulative}
                 </span>
                 <span>{formatDayLabel(monthDays[monthDays.length - 1])}</span>
               </div>
