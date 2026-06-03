@@ -24,8 +24,6 @@ export function WeeklyChart({ stats }: WeeklyChartProps) {
         )
       : 0;
 
-  const maxCompleted = Math.max(...pastStats.map((s) => s.completed), 1);
-
   return (
     <Card className="border-stone-200 bg-stone-50/80">
       <CardHeader>
@@ -37,39 +35,38 @@ export function WeeklyChart({ stats }: WeeklyChartProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex h-28 items-end justify-between gap-2">
+        <div className="flex h-32 items-end justify-between gap-2">
           {stats.map((day) => {
             const isFuture = day.date > today;
-            const barHeight =
-              day.total > 0 && !isFuture
-                ? Math.max(8, (day.completed / maxCompleted) * 96)
-                : isFuture
-                  ? 0
-                  : 4;
+            const hasActivities = day.total > 0 && !isFuture;
+            const pct = Math.round(day.rate * 100);
+            const barHeight = hasActivities
+              ? Math.max(14, pct * 0.9)
+              : isFuture
+                ? 6
+                : 8;
 
             return (
               <div
                 key={day.date}
-                className="flex h-full flex-1 flex-col items-center justify-end gap-1"
+                className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
               >
-                <span className="text-[10px] tabular-nums text-muted-foreground">
-                  {!isFuture && day.total > 0
-                    ? `${day.completed}/${day.total}`
-                    : ""}
+                <span className="text-[10px] font-medium tabular-nums text-emerald-800">
+                  {hasActivities ? `${pct}%` : isFuture ? "" : "0%"}
                 </span>
                 <div
-                  className={`w-full rounded-t-md transition-all ${
+                  className={`w-full min-h-[6px] rounded-t-md ${
                     isFuture
-                      ? "bg-gray-100"
-                      : day.completed > 0
+                      ? "bg-stone-200"
+                      : hasActivities && pct > 0
                         ? "bg-emerald-500"
-                        : "bg-gray-200"
+                        : "bg-stone-300"
                   }`}
                   style={{ height: `${barHeight}px` }}
                   title={
-                    isFuture
-                      ? formatDayLabel(day.date)
-                      : `${day.completed}/${day.total} completed`
+                    hasActivities
+                      ? `${day.completed}/${day.total} completed (${pct}%)`
+                      : formatDayLabel(day.date)
                   }
                 />
                 <span className="text-[10px] font-medium text-muted-foreground">

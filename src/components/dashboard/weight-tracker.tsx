@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Pencil, Scale } from "lucide-react";
+import { Scale } from "lucide-react";
 import { saveWeight } from "@/lib/actions/weight";
 import { formatDisplayDate } from "@/lib/utils/dates";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,10 @@ type WeightTrackerProps = {
   recentLogs: WeightLog[];
 };
 
+function storageKey(date: string) {
+  return `routine-weight-${date}`;
+}
+
 export function WeightTracker({
   today,
   todayWeight,
@@ -31,23 +35,28 @@ export function WeightTracker({
 }: WeightTrackerProps) {
   const router = useRouter();
   const gradientId = useId();
-  const [editing, setEditing] = useState(false);
-  const [localLogs, setLocalLogs] = useState(recentLogs);
-  const [loggedToday, setLoggedToday] = useState<WeightLog | undefined>(todayWeight);
-  const [weight, setWeight] = useState(
-    todayWeight ? String(todayWeight.weight_kg) : ""
-  );
+  const [weight, setWeight] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [localLogs, setLocalLogs] = useState(recentLogs);
+  const [loggedToday, setLoggedToday] = useState<WeightLog | undefined>();
 
   useEffect(() => {
     setLocalLogs(recentLogs);
-    setLoggedToday(todayWeight);
-    if (todayWeight && !editing) {
-      setWeight(String(todayWeight.weight_kg));
-    }
-  }, [recentLogs, todayWeight, editing]);
 
-  const hasLoggedToday = !!loggedToday && !editing;
+    const fromServer = todayWeight ?? recentLogs.find((l) => l.date === today);
+    try {
+      const stored = localStorage.getItem(storageKey(today));
+      if (stored) {
+        setLoggedToday(JSON.parse(stored) as WeightLog);
+        return;
+      }
+    } catch {
+      // ignore
+    }
+    setLoggedToday(fromServer);
+  }, [recentLogs, todayWeight, today]);
+
+  const hasLoggedToday = !!loggedToday;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -77,8 +86,13 @@ export function WeightTracker({
         ...prev.filter((l) => l.date !== today),
         entry,
       ]);
-      setEditing(false);
-      toast.success("Weight saved");
+      try {
+        localStorage.setItem(storageKey(today), JSON.stringify(entry));
+      } catch {
+        // ignore
+      }
+      setWeight("");
+      toast.success("Weight saved for today");
       router.refresh();
     });
   }
@@ -127,34 +141,16 @@ export function WeightTracker({
           </div>
           <div>
             <CardTitle>Weight Tracker</CardTitle>
-            <CardDescription>Daily weight in kg</CardDescription>
+            <CardDescription>
+              {hasLoggedToday
+                ? `Logged today: ${loggedToday.weight_kg} kg`
+                : "Log your weight once per day (kg)"}
+            </CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {hasLoggedToday && loggedToday ? (
-          <div className="flex items-center justify-between rounded-lg border border-stone-200 bg-stone-100 px-4 py-3">
-            <div>
-              <p className="text-xs font-medium text-emerald-700">Today logged</p>
-              <p className="text-2xl font-bold tabular-nums text-emerald-900">
-                {loggedToday.weight_kg} kg
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="border-stone-300 bg-white"
-              onClick={() => {
-                setWeight(String(loggedToday.weight_kg));
-                setEditing(true);
-              }}
-            >
-              <Pencil className="size-3.5" />
-              Edit
-            </Button>
-          </div>
-        ) : (
+        {!hasLoggedToday && (
           <form onSubmit={handleSubmit} className="flex gap-2">
             <div className="flex-1">
               <Label htmlFor="weight" className="sr-only">
@@ -182,7 +178,7 @@ export function WeightTracker({
           </form>
         )}
 
-        {chartData.length > 0 && (
+        {chartData.length > 0 ? (
           <div>
             <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
               <span>Weight trend</span>
@@ -197,7 +193,7 @@ export function WeightTracker({
               <svg
                 viewBox="0 0 100 100"
                 preserveAspectRatio="none"
-                className="h-40 w-full"
+                className="h-44 w-full"
                 aria-hidden
               >
                 <defs>
@@ -259,17 +255,22 @@ export function WeightTracker({
               </svg>
               <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
                 <span>{formatDisplayDate(chartData[0].date)}</span>
-                {chartData.length > 1 && (
+                {chartData.length > 1 ? (
                   <span>{formatDisplayDate(chartData[chartData.length - 1].date)}</span>
-                )}
-                {chartData.length === 1 && (
-                  <span className="text-emerald-700">
+                ) : (
+                  <span className="font-medium text-emerald-700">
                     {chartData[0].weight_kg} kg
                   </span>
                 )}
               </div>
             </div>
           </div>
+        ) : (
+          !hasLoggedToday && (
+            <p className="text-center text-xs text-muted-foreground">
+              Your chart will appear after you save today&apos;s weight.
+            </p>
+          )
         )}
       </CardContent>
     </Card>
