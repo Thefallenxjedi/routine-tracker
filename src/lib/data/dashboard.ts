@@ -2,6 +2,7 @@ import { format, subDays, parseISO } from "date-fns";
 import { getServerSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { getMonthRange, getTodayString, getWeekRange } from "@/lib/utils/dates";
+import { getWeightAutomatic } from "@/lib/data/preferences";
 import { computeDailyProgress, computeDayStats } from "@/lib/utils/stats";
 import { calculateStreaks } from "@/lib/utils/streaks";
 import type { Activity, ActivityLog, WeightLog } from "@/types/database";
@@ -129,6 +130,8 @@ export async function getDashboardData() {
     }
   }
 
+  const weightAutomatic = await getWeightAutomatic(userId);
+
   return {
     today,
     userName,
@@ -143,6 +146,7 @@ export async function getDashboardData() {
     streaks,
     weightLogs,
     todayWeight,
+    weightAutomatic,
     hasActivities: activeActivities.length > 0,
   };
 }

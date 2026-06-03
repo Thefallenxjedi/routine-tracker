@@ -3,21 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { requireServerSession } from "@/lib/auth/session";
 
-export async function saveWeight(date: string, weightKg: number) {
-  if (!weightKg || weightKg <= 0 || weightKg >= 500) {
-    return { error: "Enter a valid weight in kg" };
-  }
-
+export async function updateWeightAutomatic(automatic: boolean) {
   try {
     const { supabase, userId } = await requireServerSession();
 
-    const { error } = await supabase.from("weight_logs").upsert(
+    const { error } = await supabase.from("user_preferences").upsert(
       {
         user_id: userId,
-        date,
-        weight_kg: weightKg,
+        weight_automatic: automatic,
+        updated_at: new Date().toISOString(),
       },
-      { onConflict: "user_id,date" }
+      { onConflict: "user_id" }
     );
 
     if (error) {
@@ -26,7 +22,7 @@ export async function saveWeight(date: string, weightKg: number) {
 
     revalidatePath("/");
     revalidatePath("/settings");
-    return { success: true };
+    return { success: true, weightAutomatic: automatic };
   } catch {
     return { error: "Unauthorized" };
   }

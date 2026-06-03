@@ -6,7 +6,7 @@ import { format, parseISO, subDays } from "date-fns";
 import { toast } from "sonner";
 import { CalendarDays } from "lucide-react";
 import { toggleActivityLog } from "@/lib/actions/logs";
-import { Checkbox } from "@/components/ui/checkbox";
+import { ActivityCheck } from "@/components/dashboard/activity-check";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -142,22 +142,25 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
             {visibleActivities.map((activity) => {
               const completed = optimisticCompleted.get(activity.id) ?? false;
               return (
-                <label
+                <div
                   key={activity.id}
-                  className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-stone-100 ${
+                  className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
                     isPending ? "opacity-80" : ""
-                  } ${completed ? "bg-emerald-100/60" : "bg-white/60"}`}
+                  } ${completed ? "bg-emerald-100/70" : "bg-white/60"}`}
                 >
-                  <Checkbox
+                  <ActivityCheck
                     checked={completed}
+                    label={`Mark ${activity.name} as done`}
+                    disabled={isPending}
                     onCheckedChange={(checked) =>
-                      handleToggle(activity.id, checked === true)
+                      handleToggle(activity.id, checked)
                     }
-                    className="size-5"
                   />
                   <span
-                    className={`flex-1 text-sm font-medium ${
-                      completed ? "text-muted-foreground line-through" : ""
+                    className={`flex-1 text-sm font-medium transition-all ${
+                      completed
+                        ? "text-emerald-800/80 line-through decoration-emerald-600/50"
+                        : "text-emerald-950"
                     }`}
                   >
                     {activity.name}
@@ -165,7 +168,7 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
                   <Badge variant="secondary" className="text-xs">
                     {activity.category}
                   </Badge>
-                </label>
+                </div>
               );
             })}
           </div>

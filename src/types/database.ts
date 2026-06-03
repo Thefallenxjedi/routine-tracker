@@ -40,6 +40,10 @@ export type WeightLog = {
   created_at: string;
 };
 
+export type UserPreferences = {
+  weight_automatic: boolean;
+};
+
 export const ACTIVITY_CATEGORIES = [
   "General",
   "Health",

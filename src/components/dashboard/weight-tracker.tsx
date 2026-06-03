@@ -22,6 +22,7 @@ type WeightTrackerProps = {
   today: string;
   todayWeight?: WeightLog;
   recentLogs: WeightLog[];
+  weightAutomatic?: boolean;
 };
 
 function storageKey(date: string) {
@@ -32,6 +33,7 @@ export function WeightTracker({
   today,
   todayWeight,
   recentLogs,
+  weightAutomatic = true,
 }: WeightTrackerProps) {
   const router = useRouter();
   const gradientId = useId();
@@ -44,6 +46,14 @@ export function WeightTracker({
     setLocalLogs(recentLogs);
 
     const fromServer = todayWeight ?? recentLogs.find((l) => l.date === today);
+    if (!weightAutomatic) {
+      setLoggedToday(fromServer);
+      if (fromServer) {
+        setWeight(String(fromServer.weight_kg));
+      }
+      return;
+    }
+
     try {
       const stored = localStorage.getItem(storageKey(today));
       if (stored) {
@@ -54,9 +64,10 @@ export function WeightTracker({
       // ignore
     }
     setLoggedToday(fromServer);
-  }, [recentLogs, todayWeight, today]);
+  }, [recentLogs, todayWeight, today, weightAutomatic]);
 
   const hasLoggedToday = !!loggedToday;
+  const showForm = !weightAutomatic || !hasLoggedToday;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -86,10 +97,12 @@ export function WeightTracker({
         ...prev.filter((l) => l.date !== today),
         entry,
       ]);
-      try {
-        localStorage.setItem(storageKey(today), JSON.stringify(entry));
-      } catch {
-        // ignore
+      if (weightAutomatic) {
+        try {
+          localStorage.setItem(storageKey(today), JSON.stringify(entry));
+        } catch {
+          // ignore
+        }
       }
       setWeight("");
       toast.success("Weight saved for today");
@@ -142,15 +155,19 @@ export function WeightTracker({
           <div>
             <CardTitle>Weight Tracker</CardTitle>
             <CardDescription>
-              {hasLoggedToday
-                ? `Logged today: ${loggedToday.weight_kg} kg`
-                : "Log your weight once per day (kg)"}
+              {weightAutomatic
+                ? hasLoggedToday
+                  ? `Logged today: ${loggedToday.weight_kg} kg`
+                  : "Log your weight once per day (kg)"
+                : hasLoggedToday
+                  ? `Manual mode · today: ${loggedToday.weight_kg} kg`
+                  : "Manual mode — log or update your weight anytime"}
             </CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!hasLoggedToday && (
+        {showForm && (
           <form onSubmit={handleSubmit} className="flex gap-2">
             <div className="flex-1">
               <Label htmlFor="weight" className="sr-only">
@@ -266,7 +283,7 @@ export function WeightTracker({
             </div>
           </div>
         ) : (
-          !hasLoggedToday && (
+          chartData.length === 0 && !hasLoggedToday && (
             <p className="text-center text-xs text-muted-foreground">
               Your chart will appear after you save today&apos;s weight.
             </p>

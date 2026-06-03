@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, ListChecks, LogOut } from "lucide-react";
+import { LayoutDashboard, ListChecks, LogOut, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { signOut } from "@/lib/actions/activities";
 import { RoutineLogo } from "@/components/brand/routine-logo";
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/activities", label: "Activities", icon: ListChecks },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function AppHeader() {

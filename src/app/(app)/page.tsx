@@ -14,7 +14,13 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <DashboardHeader displayDate={displayDate} userName={data.userName} />
+      <DashboardHeader
+        displayDate={displayDate}
+        userName={data.userName}
+        completed={data.dailyProgress.completed}
+        total={data.dailyProgress.total}
+        rate={data.dailyProgress.rate}
+      />
 
       {data.hasActivities ? (
         <>
@@ -46,6 +52,7 @@ export default async function DashboardPage() {
         today={data.today}
         todayWeight={data.todayWeight}
         recentLogs={data.weightLogs}
+        weightAutomatic={data.weightAutomatic}
       />
     </div>
   );
