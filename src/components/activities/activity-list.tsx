@@ -83,6 +83,7 @@ export function ActivityList({
               <ActivityRow
                 key={activity.id}
                 activity={activity}
+                logs={logs}
                 onEdit={setEditing}
               />
             ))
@@ -104,6 +105,7 @@ export function ActivityList({
               <ActivityRow
                 key={activity.id}
                 activity={activity}
+                logs={logs}
                 onEdit={setEditing}
                 archived
               />

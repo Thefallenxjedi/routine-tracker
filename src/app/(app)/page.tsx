@@ -4,7 +4,6 @@ import { ActivityAnalytics } from "@/components/dashboard/activity-analytics";
 import { DailyChecklist } from "@/components/dashboard/daily-checklist";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { StreakCards } from "@/components/dashboard/streak-cards";
-import { TodayProgress } from "@/components/dashboard/today-progress";
 import { WeeklyChart } from "@/components/dashboard/weekly-chart";
 import { WeightTracker } from "@/components/dashboard/weight-tracker";
 
@@ -24,12 +23,6 @@ export default async function DashboardPage() {
 
       {data.hasActivities ? (
         <>
-          <TodayProgress
-            completed={data.dailyProgress.completed}
-            total={data.dailyProgress.total}
-            rate={data.dailyProgress.rate}
-            today={displayDate}
-          />
           <DailyChecklist
             activities={data.activeActivities}
             logs={data.logs}

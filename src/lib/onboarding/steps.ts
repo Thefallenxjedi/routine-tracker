@@ -19,24 +19,24 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     id: "welcome",
     title: "Welcome to Routine",
     description:
-      "A quick 3-step look at your dashboard. Tap Get started on the last step when you're ready.",
+      "A quick 3-step look at your dashboard — banner, progress, and checklist. Tap Get started when you're ready.",
     route: "/",
   },
   {
     id: "banner",
     title: "Your dashboard banner",
     description:
-      "This green banner is your home base. It greets you by name and shows how many activities you've completed today, with a progress bar.",
+      "Your home banner greets you by name and shows today's completion — percentage, count, and progress bar in one place.",
     route: "/",
     target: "banner",
   },
   {
-    id: "today-progress",
-    title: "Today's progress",
+    id: "checklist",
+    title: "Daily checklist",
     description:
-      "This card is tied to today's date. It shows your completion percentage and how many activities you've finished out of the total. You're ready to go — add activities from the Activities tab and check them off daily.",
+      "Check off yes/no activities or enter numbers for tracked metrics. Add more activities from the Activities tab anytime.",
     route: "/",
-    target: "today-progress",
+    target: "daily-checklist",
   },
 ];
 

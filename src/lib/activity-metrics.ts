@@ -151,3 +151,23 @@ export function formatMetricValue(value: number, activity: Activity): string {
   const formatted = Number.isInteger(value) ? String(value) : value.toFixed(1);
   return unit ? `${formatted} ${unit}` : formatted;
 }
+
+export function isNumericActivity(activity: Activity): boolean {
+  return activity.tracking_type === "numeric";
+}
+
+export function getActivityMetricTrendPoints(
+  activityId: string,
+  logs: ActivityLog[]
+): { date: string; value: number }[] {
+  return logs
+    .filter(
+      (l) =>
+        l.activity_id === activityId &&
+        l.metric_value != null &&
+        Number(l.metric_value) > 0
+    )
+    .map((l) => ({ date: l.date, value: Number(l.metric_value) }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-30);
+}

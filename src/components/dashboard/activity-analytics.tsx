@@ -2,6 +2,8 @@
 
 import { useId, useMemo, useState } from "react";
 import { formatDayLabel, formatDisplayDate, getTodayString } from "@/lib/utils/dates";
+import { ActivityMetricTrend } from "@/components/activities/activity-metric-trend";
+import { isNumericActivity } from "@/lib/activity-metrics";
 import { computeActivityMonthStats } from "@/lib/utils/activity-stats";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -60,6 +62,7 @@ export function ActivityAnalytics({
 
   const isAllView = selectedId === ALL_FILTER;
   const selected = active.find((a) => a.id === selectedId);
+  const selectedNumeric = selected ? isNumericActivity(selected) : false;
 
   const activityPoints = useMemo(() => {
     if (!selected || isAllView) return [];
@@ -212,7 +215,11 @@ export function ActivityAnalytics({
         <div className="flex items-center justify-between rounded-lg border border-stone-200 bg-stone-100 px-4 py-3">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {isAllView ? "Cumulative score" : "Days completed"}
+              {isAllView
+                ? "Cumulative score"
+                : selectedNumeric
+                  ? "Days logged"
+                  : "Days completed"}
             </p>
             <p className="text-3xl font-bold tabular-nums text-emerald-900">
               {cumulativeScore}
@@ -271,6 +278,10 @@ export function ActivityAnalytics({
             </div>
           )}
         </div>
+
+        {!isAllView && selectedNumeric && selected && (
+          <ActivityMetricTrend activity={selected} logs={logs} />
+        )}
 
         {isAllView && (
           <div>

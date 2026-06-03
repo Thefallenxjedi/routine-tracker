@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Calendar, Mail, User } from "lucide-react";
+import { Calendar, LogOut, Mail, User } from "lucide-react";
+import { signOut } from "@/lib/actions/activities";
 import { useOnboarding } from "@/components/onboarding/onboarding-context";
 import { updateWeightAutomatic } from "@/lib/actions/settings";
 import { onboardingStorageKey } from "@/lib/onboarding/steps";
@@ -29,11 +31,22 @@ type SettingsPanelProps = {
 };
 
 export function SettingsPanel({ profile, preferences, userId }: SettingsPanelProps) {
+  const router = useRouter();
   const { startTour } = useOnboarding();
   const [weightAutomatic, setWeightAutomatic] = useState(
     preferences.weight_automatic
   );
   const [isPending, startTransition] = useTransition();
+  const [signingOut, startSignOut] = useTransition();
+
+  function handleSignOut() {
+    startSignOut(async () => {
+      await signOut();
+      toast.success("Signed out");
+      router.push("/login");
+      router.refresh();
+    });
+  }
 
   function persistLocal(automatic: boolean) {
     try {
@@ -127,6 +140,25 @@ export function SettingsPanel({ profile, preferences, userId }: SettingsPanelPro
               </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-stone-200 bg-stone-50/80">
+        <CardHeader>
+          <CardTitle>Sign out</CardTitle>
+          <CardDescription>End your session on this device</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={signingOut}
+            className="gap-1.5 border-emerald-300 text-emerald-800"
+            onClick={handleSignOut}
+          >
+            <LogOut className="size-4" />
+            {signingOut ? "Signing out..." : "Log out"}
+          </Button>
         </CardContent>
       </Card>
 

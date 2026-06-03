@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { ValueTrendChart } from "@/components/charts/value-trend-chart";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Pencil, Scale } from "lucide-react";
 import { saveWeight } from "@/lib/actions/weight";
-import { formatDisplayDate } from "@/lib/utils/dates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,7 +36,6 @@ export function WeightTracker({
   weightAutomatic = true,
 }: WeightTrackerProps) {
   const router = useRouter();
-  const gradientId = useId();
   const [weight, setWeight] = useState("");
   const [isPending, startTransition] = useTransition();
   const [localLogs, setLocalLogs] = useState(recentLogs);
@@ -116,43 +115,14 @@ export function WeightTracker({
     });
   }
 
-  const chartData = useMemo(
+  const chartPoints = useMemo(
     () =>
-      [...localLogs].sort((a, b) => a.date.localeCompare(b.date)).slice(-30),
+      [...localLogs]
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(-30)
+        .map((l) => ({ date: l.date, value: l.weight_kg })),
     [localLogs]
   );
-
-  const minW = chartData.length
-    ? Math.min(...chartData.map((l) => l.weight_kg))
-    : 0;
-  const maxW = chartData.length
-    ? Math.max(...chartData.map((l) => l.weight_kg))
-    : 100;
-  const padding = Math.max((maxW - minW) * 0.15, 0.5);
-  const chartMin = minW - padding;
-  const chartMax = maxW + padding;
-  const chartRange = chartMax - chartMin || 1;
-
-  const lineWidth =
-    chartData.length > 1 ? 100 / (chartData.length - 1) : 0;
-  const linePath =
-    chartData.length > 1
-      ? chartData
-          .map((log, i) => {
-            const x = i * lineWidth;
-            const y = 100 - ((log.weight_kg - chartMin) / chartRange) * 88 - 6;
-            return `${i === 0 ? "M" : "L"} ${x} ${y}`;
-          })
-          .join(" ")
-      : "";
-
-  const singleBarHeightPct =
-    chartData.length === 1
-      ? Math.max(
-          28,
-          Math.min(92, ((chartData[0].weight_kg - chartMin) / chartRange) * 88 + 12)
-        )
-      : 0;
 
   return (
     <Card data-onboarding="weight" className="border-stone-200 bg-stone-50/80">
@@ -241,85 +211,15 @@ export function WeightTracker({
           </form>
         )}
 
-        {chartData.length > 0 ? (
-          <div>
-            <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-              <span>Weight trend</span>
-              {chartData.length > 1 && (
-                <span>
-                  {chartData[0].weight_kg} →{" "}
-                  {chartData[chartData.length - 1].weight_kg} kg
-                </span>
-              )}
-            </div>
-            <div className="rounded-lg border border-stone-200 bg-stone-100/50 p-3">
-              {chartData.length === 1 ? (
-                <div
-                  className="flex h-44 flex-col items-center justify-end"
-                  aria-label={`Weight ${chartData[0].weight_kg} kg on ${formatDisplayDate(chartData[0].date)}`}
-                >
-                  <p className="mb-2 text-lg font-bold tabular-nums text-emerald-800">
-                    {chartData[0].weight_kg} kg
-                  </p>
-                  <div
-                    className="w-20 rounded-t-lg bg-gradient-to-t from-emerald-700 to-emerald-500 shadow-md shadow-emerald-900/10 transition-all"
-                    style={{ height: `${singleBarHeightPct}%` }}
-                  />
-                  <p className="mt-3 text-[10px] font-medium text-muted-foreground">
-                    {formatDisplayDate(chartData[0].date)}
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <svg
-                    viewBox="0 0 100 100"
-                    preserveAspectRatio="none"
-                    className="h-44 w-full"
-                    aria-hidden
-                  >
-                    <defs>
-                      <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
-                        <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-                      </linearGradient>
-                    </defs>
-                    <path
-                      d={`${linePath} L 100 100 L 0 100 Z`}
-                      fill={`url(#${gradientId})`}
-                    />
-                    <path
-                      d={linePath}
-                      fill="none"
-                      stroke="#059669"
-                      strokeWidth="2.5"
-                      vectorEffect="non-scaling-stroke"
-                    />
-                    {chartData.map((log, i) => {
-                      const x = i * lineWidth;
-                      const y =
-                        100 - ((log.weight_kg - chartMin) / chartRange) * 88 - 6;
-                      return (
-                        <circle
-                          key={log.id}
-                          cx={x}
-                          cy={y}
-                          r="2.5"
-                          fill="#059669"
-                          vectorEffect="non-scaling-stroke"
-                        />
-                      );
-                    })}
-                  </svg>
-                  <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-                    <span>{formatDisplayDate(chartData[0].date)}</span>
-                    <span>{formatDisplayDate(chartData[chartData.length - 1].date)}</span>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+        {chartPoints.length > 0 ? (
+          <ValueTrendChart
+            points={chartPoints}
+            unit="kg"
+            trendLabel="Weight trend"
+            emptyMessage="Your chart will appear after you save today's weight."
+          />
         ) : (
-          chartData.length === 0 && !hasLoggedToday && (
+          !hasLoggedToday && (
             <p className="text-center text-xs text-muted-foreground">
               Your chart will appear after you save today&apos;s weight.
             </p>

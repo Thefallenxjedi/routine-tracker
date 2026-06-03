@@ -17,7 +17,7 @@ export default async function AppLayout({
       <div className="flex min-h-full flex-1 flex-col">
         <DevBypassBanner />
         <AppHeader />
-        <main className="mx-auto w-full max-w-2xl flex-1 bg-stone-100/40 px-4 py-6 pb-24 md:pb-6">
+        <main className="mx-auto w-full max-w-2xl flex-1 bg-stone-100/40 px-4 py-4 pb-24 md:pb-6 md:py-6">
           {children}
         </main>
         <MobileNav />
