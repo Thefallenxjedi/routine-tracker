@@ -22,6 +22,59 @@ type AppOnboardingProps = {
   userId: string;
 };
 
+function SpotlightMask({
+  hole,
+}: {
+  hole: { top: number; left: number; width: number; height: number };
+}) {
+  const bottom = hole.top + hole.height;
+  const right = hole.left + hole.width;
+
+  return (
+    <>
+      <div
+        className="pointer-events-auto fixed left-0 right-0 top-0 bg-black/60"
+        style={{ height: Math.max(0, hole.top) }}
+        aria-hidden
+      />
+      <div
+        className="pointer-events-auto fixed left-0 bg-black/60"
+        style={{
+          top: hole.top,
+          width: Math.max(0, hole.left),
+          height: hole.height,
+        }}
+        aria-hidden
+      />
+      <div
+        className="pointer-events-auto fixed bg-black/60"
+        style={{
+          top: hole.top,
+          left: right,
+          right: 0,
+          height: hole.height,
+        }}
+        aria-hidden
+      />
+      <div
+        className="pointer-events-auto fixed left-0 right-0 bottom-0 bg-black/60"
+        style={{ top: bottom }}
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute rounded-xl ring-4 ring-emerald-400"
+        style={{
+          top: hole.top,
+          left: hole.left,
+          width: hole.width,
+          height: hole.height,
+        }}
+        aria-hidden
+      />
+    </>
+  );
+}
+
 export function AppOnboarding({ userId }: AppOnboardingProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -72,13 +125,26 @@ export function AppOnboarding({ userId }: AppOnboardingProps) {
 
   useEffect(() => {
     if (!active || !step) return;
+
+    if (step.advanceOnNavigate && pathname === step.advanceOnNavigate) {
+      setPendingRoute(null);
+      if (stepIndex < total - 1) {
+        setStepIndex((i) => i + 1);
+      }
+      return;
+    }
+
     if (step.route !== pathname) {
+      if (step.interactive) {
+        setPendingRoute(null);
+        return;
+      }
       setPendingRoute(step.route);
       router.push(step.route);
     } else {
       setPendingRoute(null);
     }
-  }, [active, step, pathname, router]);
+  }, [active, step, pathname, router, stepIndex, total]);
 
   const updateTargetRect = useCallback(() => {
     if (!step?.target) {
@@ -111,7 +177,7 @@ export function AppOnboarding({ userId }: AppOnboardingProps) {
       window.removeEventListener("resize", updateTargetRect);
       window.removeEventListener("scroll", updateTargetRect, true);
     };
-  }, [active, stepIndex, pathname, pendingRoute, updateTargetRect, active]);
+  }, [active, stepIndex, pathname, pendingRoute, updateTargetRect]);
 
   function goNext() {
     if (stepIndex >= total - 1) {
@@ -119,11 +185,19 @@ export function AppOnboarding({ userId }: AppOnboardingProps) {
       router.push("/");
       return;
     }
+    const next = ONBOARDING_STEPS[stepIndex + 1];
+    if (next.route !== pathname && !next.interactive) {
+      router.push(next.route);
+    }
     setStepIndex((i) => i + 1);
   }
 
   function goBack() {
     if (stepIndex > 0) {
+      const prev = ONBOARDING_STEPS[stepIndex - 1];
+      if (prev.route !== pathname) {
+        router.push(prev.route);
+      }
       setStepIndex((i) => i - 1);
     }
   }
@@ -132,7 +206,7 @@ export function AppOnboarding({ userId }: AppOnboardingProps) {
     return null;
   }
 
-  const padding = 8;
+  const padding = step.interactive ? 10 : 8;
   const spotlight = targetRect
     ? {
         top: targetRect.top - padding,
@@ -142,11 +216,24 @@ export function AppOnboarding({ userId }: AppOnboardingProps) {
       }
     : null;
 
-  return (
-    <div className="fixed inset-0 z-[110]" role="dialog" aria-modal="true">
-      {!spotlight && <div className="absolute inset-0 bg-black/55" aria-hidden />}
+  const useCutout = spotlight && step.interactive;
 
-      {spotlight && (
+  return (
+    <div
+      className="pointer-events-none fixed inset-0 z-[110]"
+      role="dialog"
+      aria-modal="true"
+    >
+      {!spotlight && (
+        <div
+          className="pointer-events-auto absolute inset-0 bg-black/55"
+          aria-hidden
+        />
+      )}
+
+      {spotlight && useCutout && <SpotlightMask hole={spotlight} />}
+
+      {spotlight && !useCutout && (
         <div
           className="pointer-events-none absolute rounded-xl ring-4 ring-emerald-400 transition-all duration-300"
           style={{
@@ -163,7 +250,7 @@ export function AppOnboarding({ userId }: AppOnboardingProps) {
         step={step}
         stepIndex={stepIndex}
         total={total}
-        hasTarget={!!step.target}
+        targetRect={targetRect}
         onSkip={complete}
         onBack={goBack}
         onNext={goNext}
@@ -178,7 +265,7 @@ function TourCard({
   step,
   stepIndex,
   total,
-  hasTarget,
+  targetRect,
   onSkip,
   onBack,
   onNext,
@@ -188,20 +275,44 @@ function TourCard({
   step: OnboardingStep;
   stepIndex: number;
   total: number;
-  hasTarget: boolean;
+  targetRect: Rect | null;
   onSkip: () => void;
   onBack: () => void;
   onNext: () => void;
   showBack: boolean;
   isLast: boolean;
 }) {
+  const position = step.cardPosition ?? (step.target ? "below-target" : "center");
+
+  let positionClass =
+    "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2";
+
+  if (targetRect && position === "above-target") {
+    positionClass = "left-1/2 -translate-x-1/2";
+  } else if (targetRect && position === "below-target") {
+    positionClass = "left-1/2 -translate-x-1/2";
+  } else if (!step.target) {
+    positionClass = "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2";
+  }
+
+  const style: React.CSSProperties = {};
+  if (targetRect && position === "above-target") {
+    style.left = targetRect.left + targetRect.width / 2;
+    style.top = Math.max(16, targetRect.top - 12);
+    style.transform = "translate(-50%, -100%)";
+  } else if (targetRect && position === "below-target") {
+    style.left = targetRect.left + targetRect.width / 2;
+    style.top = targetRect.top + targetRect.height + 16;
+    style.transform = "translateX(-50%)";
+  } else if (targetRect && position === "center") {
+    style.top = "50%";
+    style.transform = "translate(-50%, -50%)";
+  }
+
   return (
     <div
-      className={`pointer-events-auto absolute z-[111] w-[calc(100%-2rem)] max-w-md px-4 ${
-        hasTarget
-          ? "bottom-24 left-1/2 -translate-x-1/2 md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2"
-          : "left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-      }`}
+      className={`pointer-events-auto absolute z-[111] w-[calc(100%-2rem)] max-w-md px-4 ${positionClass}`}
+      style={style}
     >
       <div className="rounded-2xl border border-emerald-200 bg-white p-5 shadow-2xl">
         <div className="mb-3 flex items-start justify-between gap-2">
@@ -221,6 +332,11 @@ function TourCard({
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           {step.description}
         </p>
+        {step.interactive && (
+          <p className="mt-2 text-xs font-medium text-emerald-700">
+            The highlighted button is tappable.
+          </p>
+        )}
         <div className="mt-5 flex flex-wrap gap-2">
           {showBack && (
             <Button type="button" variant="outline" onClick={onBack}>

@@ -6,6 +6,12 @@ export type OnboardingStep = {
   route: string;
   /** Matches [data-onboarding="..."] — omit for centered modal */
   target?: string;
+  /** Spotlight stays clickable; tour does not auto-navigate away */
+  interactive?: boolean;
+  /** When user navigates here (e.g. taps nav), go to the next step */
+  advanceOnNavigate?: string;
+  /** Where to place the tooltip card */
+  cardPosition?: "center" | "above-target" | "below-target";
 };
 
 export const ONBOARDING_STEPS: OnboardingStep[] = [
@@ -60,17 +66,22 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     id: "nav-activities",
     title: "Activities tab",
     description:
-      "Tap Activities in the bottom bar (mobile) or top menu (desktop) to create and manage what you want to track each day.",
+      "Tap Activities in the bottom bar (mobile) or top menu (desktop) to open this section. You can tap it now — or press Next when you're ready.",
     route: "/",
     target: "nav-activities",
+    interactive: true,
+    advanceOnNavigate: "/activities",
+    cardPosition: "above-target",
   },
   {
     id: "activities-new",
     title: "Create activities",
     description:
-      'Press "New" to add an activity — choose a name and category (Health, Work, etc.). Active items appear on your daily checklist.',
+      'Tap "New" to add an activity — choose a name and category (Health, Work, etc.). Active items appear on your daily checklist.',
     route: "/activities",
     target: "activities-new",
+    interactive: true,
+    cardPosition: "below-target",
   },
   {
     id: "activities-heatmap",
@@ -84,9 +95,12 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     id: "nav-settings",
     title: "Settings tab",
     description:
-      "Open Settings to see your account details and control how weight logging behaves.",
+      "Tap Settings to see your account and weight options. You can tap it now — or press Next.",
     route: "/activities",
     target: "nav-settings",
+    interactive: true,
+    advanceOnNavigate: "/settings",
+    cardPosition: "above-target",
   },
   {
     id: "settings-account",
