@@ -1,39 +1,64 @@
+import { getServerSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import {
-  getMonthRange,
-  getTodayString,
-  getWeekRange,
-} from "@/lib/utils/dates";
+import { getMonthRange, getTodayString, getWeekRange } from "@/lib/utils/dates";
 import { computeDailyProgress, computeDayStats } from "@/lib/utils/stats";
 import { calculateStreaks } from "@/lib/utils/streaks";
-import type { Activity, ActivityLog } from "@/types/database";
+import type { Activity, ActivityLog, WeightLog } from "@/types/database";
+
+async function getDataClient() {
+  const session = await getServerSession();
+  if (session) {
+    return { supabase: session.supabase, userId: session.userId };
+  }
+  const supabase = await createClient();
+  return { supabase, userId: null as string | null };
+}
 
 export async function getDashboardData() {
-  const supabase = await createClient();
+  const { supabase, userId } = await getDataClient();
   const today = getTodayString();
   const weekRange = getWeekRange();
   const monthRange = getMonthRange();
 
-  const rangeStart = weekRange.start < monthRange.start ? weekRange.start : monthRange.start;
-  const rangeEnd = monthRange.end > weekRange.end ? monthRange.end : weekRange.end;
+  const rangeStart =
+    weekRange.start < monthRange.start ? weekRange.start : monthRange.start;
+  const rangeEnd =
+    monthRange.end > weekRange.end ? monthRange.end : weekRange.end;
+
+  const activitiesQuery = supabase
+    .from("activities")
+    .select("*")
+    .order("created_at", { ascending: true });
+
+  const logsQuery = supabase
+    .from("activity_logs")
+    .select("*")
+    .gte("date", rangeStart)
+    .lte("date", rangeEnd);
+
+  if (userId) {
+    activitiesQuery.eq("user_id", userId);
+  }
 
   const [activitiesResult, logsResult] = await Promise.all([
-    supabase
-      .from("activities")
-      .select("*")
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("activity_logs")
-      .select("*")
-      .gte("date", rangeStart)
-      .lte("date", rangeEnd),
+    activitiesQuery,
+    logsQuery,
   ]);
 
   if (activitiesResult.error) throw activitiesResult.error;
   if (logsResult.error) throw logsResult.error;
 
-  const activities = activitiesResult.data as Activity[];
-  const logs = logsResult.data as ActivityLog[];
+  let activities = (activitiesResult.data ?? []) as Activity[];
+  let logs = (logsResult.data ?? []) as ActivityLog[];
+
+  if (!userId) {
+    activities = [];
+    logs = [];
+  } else if (userId) {
+    const activityIds = new Set(activities.map((a) => a.id));
+    logs = logs.filter((l) => activityIds.has(l.activity_id));
+  }
+
   const activeActivities = activities.filter((a) => a.is_active);
 
   const streakLogs =
@@ -61,28 +86,58 @@ export async function getDashboardData() {
   const monthlyStats = computeDayStats(activities, logs, monthRange.days);
   const streaks = calculateStreaks(activeActivities, streakLogs, today);
 
+  let weightLogs: WeightLog[] = [];
+  let todayWeight: WeightLog | undefined;
+
+  if (userId) {
+    const { data: weightData, error: weightError } = await supabase
+      .from("weight_logs")
+      .select("*")
+      .eq("user_id", userId)
+      .order("date", { ascending: false })
+      .limit(30);
+
+    if (!weightError && weightData) {
+      weightLogs = weightData.map((w) => ({
+        ...w,
+        weight_kg: Number(w.weight_kg),
+      })) as WeightLog[];
+      todayWeight = weightLogs.find((w) => w.date === today);
+    }
+  }
+
   return {
     today,
     activitiesWithLogs,
+    activities,
+    logs,
+    monthDays: monthRange.days,
     dailyProgress,
     weeklyStats,
     monthlyStats,
     streaks,
+    weightLogs,
+    todayWeight,
     hasActivities: activeActivities.length > 0,
   };
 }
 
 export async function getActivitiesData() {
-  const supabase = await createClient();
+  const { supabase, userId } = await getDataClient();
+
+  if (!userId) {
+    return { active: [], archived: [] };
+  }
 
   const { data, error } = await supabase
     .from("activities")
     .select("*")
+    .eq("user_id", userId)
     .order("created_at", { ascending: true });
 
   if (error) throw error;
 
-  const activities = data as Activity[];
+  const activities = (data ?? []) as Activity[];
   return {
     active: activities.filter((a) => a.is_active),
     archived: activities.filter((a) => !a.is_active),

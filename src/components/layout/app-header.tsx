@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Activity, LayoutDashboard, ListChecks, LogOut } from "lucide-react";
+import { LayoutDashboard, ListChecks, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { signOut } from "@/lib/actions/activities";
+import { RoutineLogo } from "@/components/brand/routine-logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -25,12 +26,11 @@ export function AppHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 border-b border-emerald-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="mx-auto flex h-14 max-w-2xl items-center justify-between px-4">
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2">
-            <Activity className="size-5 text-emerald-600" />
-            <span className="font-semibold tracking-tight">Routine</span>
+          <Link href="/">
+            <RoutineLogo size="sm" />
           </Link>
           <nav className="hidden items-center gap-1 md:flex">
             {navItems.map(({ href, label, icon: Icon }) => (
@@ -40,8 +40,8 @@ export function AppHeader() {
                 className={cn(
                   "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                   pathname === href
-                    ? "bg-emerald-50 text-emerald-700"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "text-muted-foreground hover:bg-emerald-50 hover:text-emerald-900"
                 )}
               >
                 <Icon className="size-4" />
@@ -50,7 +50,12 @@ export function AppHeader() {
             ))}
           </nav>
         </div>
-        <Button variant="ghost" size="sm" onClick={handleSignOut}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleSignOut}
+          className="text-emerald-800 hover:bg-emerald-50"
+        >
           <LogOut className="size-4" />
           <span className="hidden sm:inline">Sign out</span>
         </Button>

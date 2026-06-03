@@ -1,10 +1,12 @@
 import { format } from "date-fns";
 import { getDashboardData } from "@/lib/data/dashboard";
+import { ActivityAnalytics } from "@/components/dashboard/activity-analytics";
 import { DailyChecklist } from "@/components/dashboard/daily-checklist";
-import { MonthlyHeatmap } from "@/components/dashboard/monthly-heatmap";
+import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { StreakCards } from "@/components/dashboard/streak-cards";
 import { TodayProgress } from "@/components/dashboard/today-progress";
 import { WeeklyChart } from "@/components/dashboard/weekly-chart";
+import { WeightTracker } from "@/components/dashboard/weight-tracker";
 
 export default async function DashboardPage() {
   const data = await getDashboardData();
@@ -12,10 +14,18 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">{displayDate}</p>
-      </div>
+      <DashboardHeader
+        displayDate={displayDate}
+        completed={data.dailyProgress.completed}
+        total={data.dailyProgress.total}
+        rate={data.dailyProgress.rate}
+      />
+
+      <WeightTracker
+        today={data.today}
+        todayWeight={data.todayWeight}
+        recentLogs={data.weightLogs}
+      />
 
       {data.hasActivities ? (
         <>
@@ -31,7 +41,11 @@ export default async function DashboardPage() {
           />
           <StreakCards streaks={data.streaks} />
           <WeeklyChart stats={data.weeklyStats} />
-          <MonthlyHeatmap stats={data.monthlyStats} />
+          <ActivityAnalytics
+            activities={data.activities}
+            logs={data.logs}
+            monthDays={data.monthDays}
+          />
         </>
       ) : (
         <DailyChecklist activities={[]} today={data.today} />

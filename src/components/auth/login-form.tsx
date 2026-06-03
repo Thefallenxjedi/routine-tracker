@@ -65,19 +65,18 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>Welcome to Routine</CardTitle>
+    <Card className="w-full max-w-md border-emerald-100 bg-white/90 shadow-xl shadow-emerald-900/5 backdrop-blur">
+      <CardHeader className="text-center">
+        <CardTitle className="text-emerald-950">Welcome to Routine</CardTitle>
         <CardDescription>
-          Sign in or create an account with Google to start tracking your
-          daily activities.
+          Sign in with Google to track your habits and build streaks.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Button
           type="button"
           variant="outline"
-          className="w-full"
+          className="h-11 w-full border-emerald-200 bg-white hover:bg-emerald-50"
           disabled={loading}
           onClick={handleGoogleSignIn}
         >

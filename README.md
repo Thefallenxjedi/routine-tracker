@@ -29,7 +29,9 @@ npm install
 ### 2. Set up Supabase
 
 1. Create a project at [supabase.com](https://supabase.com)
-2. Run the migration in `supabase/migrations/001_initial_schema.sql` via the SQL Editor
+2. Run the migrations via the SQL Editor:
+   - `supabase/migrations/001_initial_schema.sql`
+   - `supabase/migrations/002_weight_logs.sql`
 3. Enable **Google** under Authentication → Providers → Google
 4. Add your Google OAuth Client ID and Client Secret (see below)
 
@@ -68,7 +70,26 @@ Add these under Supabase → Authentication → URL Configuration:
 
 **Note:** If port 3000 is busy, Next.js uses 3001. Add both localhost redirect URLs.
 
-### 5. Run locally
+### 5. Local dev without login (optional)
+
+To skip the login screen while developing locally, add to `.env.local`:
+
+```
+DEV_BYPASS_AUTH=true
+```
+
+Restart `npm run dev` — you'll go straight to the dashboard. **This only works in development** and is ignored in production.
+
+To also read/write real data locally (create activities, toggle checkboxes), add:
+
+```
+DEV_USER_ID=<uuid from Supabase → Authentication → Users>
+SUPABASE_SERVICE_ROLE_KEY=<from Supabase → Settings → API → service_role>
+```
+
+Without those two, pages load with empty data — fine for UI work.
+
+### 6. Run locally
 
 ```bash
 npm run dev

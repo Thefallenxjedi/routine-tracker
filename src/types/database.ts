@@ -32,6 +32,14 @@ export type DayStat = {
   rate: number;
 };
 
+export type WeightLog = {
+  id: string;
+  user_id: string;
+  date: string;
+  weight_kg: number;
+  created_at: string;
+};
+
 export const ACTIVITY_CATEGORIES = [
   "General",
   "Health",

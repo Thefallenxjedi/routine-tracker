@@ -1,7 +1,27 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+function isDevBypassAuth(): boolean {
+  return (
+    process.env.NODE_ENV === "development" &&
+    process.env.DEV_BYPASS_AUTH === "true"
+  );
+}
+
 export async function updateSession(request: NextRequest) {
+  const isAuthRoute =
+    request.nextUrl.pathname.startsWith("/login") ||
+    request.nextUrl.pathname.startsWith("/auth");
+
+  if (isDevBypassAuth()) {
+    if (isAuthRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next({ request });
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.toLowerCase();
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -31,10 +51,6 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const isAuthRoute =
-    request.nextUrl.pathname.startsWith("/login") ||
-    request.nextUrl.pathname.startsWith("/auth");
 
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone();
