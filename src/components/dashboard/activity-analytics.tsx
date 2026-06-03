@@ -94,7 +94,7 @@ export function ActivityAnalytics({
 
   if (active.length === 0) {
     return (
-      <Card>
+      <Card className="border-stone-200 bg-stone-50/80">
         <CardHeader>
           <CardTitle>Monthly Heatmap</CardTitle>
           <CardDescription>Add activities to see heatmaps and trends.</CardDescription>
@@ -169,7 +169,7 @@ export function ActivityAnalytics({
     .join(" ");
 
   return (
-    <Card>
+    <Card className="border-stone-200 bg-stone-50/80">
       <CardHeader>
         <CardTitle>Monthly Heatmap</CardTitle>
         <CardDescription>

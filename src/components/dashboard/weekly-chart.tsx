@@ -27,7 +27,7 @@ export function WeeklyChart({ stats }: WeeklyChartProps) {
   const maxCompleted = Math.max(...pastStats.map((s) => s.completed), 1);
 
   return (
-    <Card>
+    <Card className="border-stone-200 bg-stone-50/80">
       <CardHeader>
         <CardTitle>Weekly Overview</CardTitle>
         <CardDescription>

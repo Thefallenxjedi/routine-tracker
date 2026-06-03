@@ -1,3 +1,4 @@
+import { format, subDays, parseISO } from "date-fns";
 import { getServerSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { getMonthRange, getTodayString, getWeekRange } from "@/lib/utils/dates";
@@ -38,8 +39,12 @@ export async function getDashboardData() {
   const monthRange = getMonthRange();
   const userName = await getUserDisplayName();
 
-  const rangeStart =
-    weekRange.start < monthRange.start ? weekRange.start : monthRange.start;
+  const backfillStart = format(
+    subDays(parseISO(`${today}T12:00:00`), 60),
+    "yyyy-MM-dd"
+  );
+
+  const rangeStart = [weekRange.start, monthRange.start, backfillStart].sort()[0];
   const rangeEnd =
     monthRange.end > weekRange.end ? monthRange.end : weekRange.end;
 
@@ -112,8 +117,8 @@ export async function getDashboardData() {
       .from("weight_logs")
       .select("*")
       .eq("user_id", userId)
-      .order("date", { ascending: false })
-      .limit(30);
+      .order("date", { ascending: true })
+      .limit(60);
 
     if (!weightError && weightData) {
       weightLogs = weightData.map((w) => ({
@@ -142,24 +147,52 @@ export async function getDashboardData() {
   };
 }
 
-export async function getActivitiesData() {
+export async function getActivitiesPageData() {
   const { supabase, userId } = await getDataClient();
+  const monthRange = getMonthRange();
 
   if (!userId) {
-    return { active: [], archived: [] };
+    return {
+      active: [],
+      archived: [],
+      activities: [],
+      logs: [],
+      monthDays: monthRange.days,
+      overallStats: [],
+    };
   }
 
-  const { data, error } = await supabase
-    .from("activities")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: true });
+  const [activitiesResult, logsResult] = await Promise.all([
+    supabase
+      .from("activities")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("activity_logs")
+      .select("*")
+      .gte("date", monthRange.start)
+      .lte("date", monthRange.end),
+  ]);
 
-  if (error) throw error;
+  if (activitiesResult.error) throw activitiesResult.error;
+  if (logsResult.error) throw logsResult.error;
 
-  const activities = (data ?? []) as Activity[];
+  const activities = (activitiesResult.data ?? []) as Activity[];
+  const activityIds = new Set(activities.map((a) => a.id));
+  const logs = ((logsResult.data ?? []) as ActivityLog[]).filter((l) =>
+    activityIds.has(l.activity_id)
+  );
+
+  const activeActivities = activities.filter((a) => a.is_active);
+  const monthlyStats = computeDayStats(activeActivities, logs, monthRange.days);
+
   return {
-    active: activities.filter((a) => a.is_active),
+    active: activeActivities,
     archived: activities.filter((a) => !a.is_active),
+    activities,
+    logs,
+    monthDays: monthRange.days,
+    overallStats: monthlyStats,
   };
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
+import { ActivityAnalytics } from "@/components/dashboard/activity-analytics";
 import { ActivityFormDialog } from "@/components/activities/activity-form-dialog";
 import { ActivityRow } from "@/components/activities/activity-row";
 import { Button } from "@/components/ui/button";
@@ -12,14 +13,25 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { Activity } from "@/types/database";
+import type { Activity, ActivityLog, DayStat } from "@/types/database";
 
 type ActivityListProps = {
   active: Activity[];
   archived: Activity[];
+  activities: Activity[];
+  logs: ActivityLog[];
+  monthDays: string[];
+  overallStats: DayStat[];
 };
 
-export function ActivityList({ active, archived }: ActivityListProps) {
+export function ActivityList({
+  active,
+  archived,
+  activities,
+  logs,
+  monthDays,
+  overallStats,
+}: ActivityListProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<Activity | null>(null);
 
@@ -27,18 +39,30 @@ export function ActivityList({ active, archived }: ActivityListProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Activities</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-emerald-950">
+            Activities
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Manage what you track each day
+            Manage activities and view monthly heatmaps
           </p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
+        <Button
+          onClick={() => setCreateOpen(true)}
+          className="bg-emerald-600 hover:bg-emerald-700"
+        >
           <Plus className="size-4" />
           New
         </Button>
       </div>
 
-      <Card>
+      <ActivityAnalytics
+        activities={activities}
+        logs={logs}
+        monthDays={monthDays}
+        overallStats={overallStats}
+      />
+
+      <Card className="border-stone-200 bg-stone-50/80">
         <CardHeader>
           <CardTitle>Active</CardTitle>
           <CardDescription>
@@ -63,7 +87,7 @@ export function ActivityList({ active, archived }: ActivityListProps) {
       </Card>
 
       {archived.length > 0 && (
-        <Card>
+        <Card className="border-stone-200 bg-stone-50/80">
           <CardHeader>
             <CardTitle>Archived</CardTitle>
             <CardDescription>

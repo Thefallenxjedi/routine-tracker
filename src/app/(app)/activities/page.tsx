@@ -1,8 +1,17 @@
-import { getActivitiesData } from "@/lib/data/dashboard";
+import { getActivitiesPageData } from "@/lib/data/dashboard";
 import { ActivityList } from "@/components/activities/activity-list";
 
 export default async function ActivitiesPage() {
-  const { active, archived } = await getActivitiesData();
+  const data = await getActivitiesPageData();
 
-  return <ActivityList active={active} archived={archived} />;
+  return (
+    <ActivityList
+      active={data.active}
+      archived={data.archived}
+      activities={data.activities}
+      logs={data.logs}
+      monthDays={data.monthDays}
+      overallStats={data.overallStats}
+    />
+  );
 }

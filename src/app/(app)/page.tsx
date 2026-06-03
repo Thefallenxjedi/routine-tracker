@@ -1,6 +1,5 @@
 import { format } from "date-fns";
 import { getDashboardData } from "@/lib/data/dashboard";
-import { ActivityAnalytics } from "@/components/dashboard/activity-analytics";
 import { DailyChecklist } from "@/components/dashboard/daily-checklist";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { StreakCards } from "@/components/dashboard/streak-cards";
@@ -14,13 +13,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <DashboardHeader
-        displayDate={displayDate}
-        userName={data.userName}
-        completed={data.dailyProgress.completed}
-        total={data.dailyProgress.total}
-        rate={data.dailyProgress.rate}
-      />
+      <DashboardHeader displayDate={displayDate} userName={data.userName} />
 
       <WeightTracker
         today={data.today}
@@ -37,20 +30,15 @@ export default async function DashboardPage() {
             today={displayDate}
           />
           <DailyChecklist
-            activities={data.activitiesWithLogs}
+            activities={data.activeActivities}
+            logs={data.logs}
             today={data.today}
           />
           <StreakCards streaks={data.streaks} />
           <WeeklyChart stats={data.weeklyStats} />
-          <ActivityAnalytics
-            activities={data.activities}
-            logs={data.logs}
-            monthDays={data.monthDays}
-            overallStats={data.monthlyStats}
-          />
         </>
       ) : (
-        <DailyChecklist activities={[]} today={data.today} />
+        <DailyChecklist activities={[]} logs={[]} today={data.today} />
       )}
     </div>
   );
