@@ -26,9 +26,9 @@ export function AppHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-emerald-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+    <header className="sticky top-0 z-40 border-b border-emerald-100 bg-white shadow-sm">
       <div className="mx-auto flex h-14 max-w-2xl items-center justify-between px-4">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-5">
           <Link href="/">
             <RoutineLogo size="sm" />
           </Link>
@@ -51,13 +51,13 @@ export function AppHeader() {
           </nav>
         </div>
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={handleSignOut}
-          className="text-emerald-800 hover:bg-emerald-50"
+          className="gap-1.5 border-emerald-300 bg-white text-emerald-800 shadow-sm hover:bg-emerald-50 hover:text-emerald-900"
         >
           <LogOut className="size-4" />
-          <span className="hidden sm:inline">Sign out</span>
+          Log out
         </Button>
       </div>
     </header>

@@ -14,11 +14,29 @@ async function getDataClient() {
   return { supabase, userId: null as string | null };
 }
 
+async function getUserDisplayName(): Promise<string> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return "there";
+
+  const meta = user.user_metadata ?? {};
+  const full =
+    meta.full_name || meta.name || meta.user_name || user.email?.split("@")[0];
+  if (typeof full === "string" && full.length > 0) {
+    return full.split(" ")[0];
+  }
+  return "there";
+}
+
 export async function getDashboardData() {
   const { supabase, userId } = await getDataClient();
   const today = getTodayString();
   const weekRange = getWeekRange();
   const monthRange = getMonthRange();
+  const userName = await getUserDisplayName();
 
   const rangeStart =
     weekRange.start < monthRange.start ? weekRange.start : monthRange.start;
@@ -54,7 +72,7 @@ export async function getDashboardData() {
   if (!userId) {
     activities = [];
     logs = [];
-  } else if (userId) {
+  } else {
     const activityIds = new Set(activities.map((a) => a.id));
     logs = logs.filter((l) => activityIds.has(l.activity_id));
   }
@@ -82,8 +100,8 @@ export async function getDashboardData() {
   }));
 
   const dailyProgress = computeDailyProgress(activeActivities, logs, today);
-  const weeklyStats = computeDayStats(activities, logs, weekRange.days);
-  const monthlyStats = computeDayStats(activities, logs, monthRange.days);
+  const weeklyStats = computeDayStats(activeActivities, logs, weekRange.days);
+  const monthlyStats = computeDayStats(activeActivities, logs, monthRange.days);
   const streaks = calculateStreaks(activeActivities, streakLogs, today);
 
   let weightLogs: WeightLog[] = [];
@@ -108,8 +126,10 @@ export async function getDashboardData() {
 
   return {
     today,
+    userName,
     activitiesWithLogs,
     activities,
+    activeActivities,
     logs,
     monthDays: monthRange.days,
     dailyProgress,

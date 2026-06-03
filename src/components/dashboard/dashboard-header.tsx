@@ -1,5 +1,6 @@
 type DashboardHeaderProps = {
   displayDate: string;
+  userName: string;
   completed: number;
   total: number;
   rate: number;
@@ -7,13 +8,11 @@ type DashboardHeaderProps = {
 
 export function DashboardHeader({
   displayDate,
+  userName,
   completed,
   total,
   rate,
 }: DashboardHeaderProps) {
-  const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const percentage = Math.round(rate * 100);
 
   return (
@@ -22,16 +21,19 @@ export function DashboardHeader({
       <div className="absolute -bottom-8 right-12 size-24 rounded-full bg-white/5" />
       <div className="relative">
         <p className="text-sm font-medium text-emerald-100">{displayDate}</p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight">{greeting}</h1>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight">
+          Hi, {userName}
+        </h1>
         <p className="mt-2 text-sm text-emerald-100">
           {total > 0 ? (
             <>
-              <span className="text-2xl font-bold text-white">{percentage}%</span>
-              {" · "}
-              {completed}/{total} activities done today
+              Enter your inputs below ·{" "}
+              <span className="font-semibold text-white">
+                {completed}/{total} done ({percentage}%)
+              </span>
             </>
           ) : (
-            "Create activities to start your routine"
+            "Enter your inputs — add activities to get started"
           )}
         </p>
         {total > 0 && (

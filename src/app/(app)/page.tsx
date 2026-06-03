@@ -16,6 +16,7 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <DashboardHeader
         displayDate={displayDate}
+        userName={data.userName}
         completed={data.dailyProgress.completed}
         total={data.dailyProgress.total}
         rate={data.dailyProgress.rate}
@@ -45,6 +46,7 @@ export default async function DashboardPage() {
             activities={data.activities}
             logs={data.logs}
             monthDays={data.monthDays}
+            overallStats={data.monthlyStats}
           />
         </>
       ) : (
