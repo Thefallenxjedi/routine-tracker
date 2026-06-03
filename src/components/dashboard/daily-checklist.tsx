@@ -81,9 +81,23 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
   const [logState, setLogState] = useState<Map<string, LogState>>(
     () => serverState
   );
+  const [editingMetricIds, setEditingMetricIds] = useState<Set<string>>(
+    () => new Set()
+  );
 
   useEffect(() => {
     setLogState(serverState);
+  }, [serverState]);
+
+  useEffect(() => {
+    setEditingMetricIds((prev) => {
+      const next = new Set(prev);
+      for (const id of prev) {
+        const state = serverState.get(id);
+        if (state?.done) next.delete(id);
+      }
+      return next;
+    });
   }, [serverState]);
 
   const visibleActivities = useMemo(
@@ -141,11 +155,14 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
 
     setLogState((prev) => {
       const map = new Map(prev);
-      map.set(activity.id, {
-        done: nextDone,
-        metricValue: raw,
-      });
+      map.set(activity.id, { done: nextDone, metricValue: raw });
       return map;
+    });
+
+    setEditingMetricIds((ids) => {
+      const next = new Set(ids);
+      next.delete(activity.id);
+      return next;
     });
 
     void saveActivityLog(activity.id, selectedDate, { metricValue: value }).then(
@@ -156,6 +173,7 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
             map.set(activity.id, previous);
             return map;
           });
+          setEditingMetricIds((ids) => new Set(ids).add(activity.id));
           toast.error(result.error);
           return;
         }
@@ -169,8 +187,36 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
     );
   }
 
+  function startMetricEdit(activityId: string) {
+    setEditingMetricIds((ids) => new Set(ids).add(activityId));
+  }
+
+  function cancelMetricEdit(activityId: string) {
+    setEditingMetricIds((ids) => {
+      const next = new Set(ids);
+      next.delete(activityId);
+      return next;
+    });
+    const server = serverState.get(activityId);
+    setLogState((prev) => {
+      const map = new Map(prev);
+      if (server) {
+        map.set(activityId, server);
+      } else {
+        map.delete(activityId);
+      }
+      return map;
+    });
+  }
+
   function handleMetricClear(activity: Activity) {
     const previous = logState.get(activity.id) ?? { done: false, metricValue: "" };
+
+    setEditingMetricIds((ids) => {
+      const next = new Set(ids);
+      next.delete(activity.id);
+      return next;
+    });
 
     setLogState((prev) => {
       const map = new Map(prev);
@@ -267,6 +313,12 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
               const unit = getActivityMetricUnit(activity);
               const preset = getMetricPreset(activity.metric_key);
               const isNumeric = activity.tracking_type === "numeric";
+              const isEditingMetric = editingMetricIds.has(activity.id);
+              const showMetricForm = isNumeric && (!state.done || isEditingMetric);
+              const savedNumericValue =
+                state.metricValue !== ""
+                  ? parseFloat(state.metricValue)
+                  : null;
 
               return (
                 <div
@@ -277,9 +329,21 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
                 >
                   <div className="flex items-start gap-3">
                     {isNumeric ? (
-                      <div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-700">
-                        #
-                      </div>
+                      <ActivityCheck
+                        checked={state.done}
+                        label={
+                          state.done
+                            ? `${activity.name} logged — tap to edit`
+                            : `Log ${activity.name}`
+                        }
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            startMetricEdit(activity.id);
+                          } else if (state.done) {
+                            handleMetricClear(activity);
+                          }
+                        }}
+                      />
                     ) : (
                       <ActivityCheck
                         checked={state.done}
@@ -301,14 +365,23 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
                         <Badge variant="secondary" className="text-xs">
                           {activity.category}
                         </Badge>
-                        {isNumeric && unit && (
+                        {isNumeric && unit && !state.done && (
                           <Badge className="bg-emerald-600/10 text-xs text-emerald-800">
                             {unit}
                           </Badge>
                         )}
                       </div>
 
-                      {isNumeric && (
+                      {isNumeric && state.done && !isEditingMetric && (
+                        <p className="mt-1 text-sm font-semibold tabular-nums text-emerald-800">
+                          {savedNumericValue != null &&
+                          !Number.isNaN(savedNumericValue)
+                            ? formatMetricValue(savedNumericValue, activity)
+                            : "—"}
+                        </p>
+                      )}
+
+                      {showMetricForm && (
                         <div className="mt-2 flex flex-wrap items-center gap-2">
                           <Input
                             type="number"
@@ -319,8 +392,12 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
                             onChange={(e) =>
                               setLogState((prev) => {
                                 const map = new Map(prev);
+                                const current = prev.get(activity.id) ?? {
+                                  done: false,
+                                  metricValue: "",
+                                };
                                 map.set(activity.id, {
-                                  ...state,
+                                  ...current,
                                   metricValue: e.target.value,
                                 });
                                 return map;
@@ -342,17 +419,40 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
                           >
                             Save
                           </Button>
-                          {state.done && (
+                          {isEditingMetric && state.done && (
                             <Button
                               type="button"
                               size="sm"
-                              variant="ghost"
-                              className="h-9 text-muted-foreground"
-                              onClick={() => handleMetricClear(activity)}
+                              variant="outline"
+                              className="h-9 border-stone-300"
+                              onClick={() => cancelMetricEdit(activity.id)}
                             >
-                              Clear
+                              Cancel
                             </Button>
                           )}
+                        </div>
+                      )}
+
+                      {isNumeric && state.done && !isEditingMetric && (
+                        <div className="mt-2 flex gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-8 border-emerald-300 bg-white text-emerald-800"
+                            onClick={() => startMetricEdit(activity.id)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 text-muted-foreground"
+                            onClick={() => handleMetricClear(activity)}
+                          >
+                            Clear
+                          </Button>
                         </div>
                       )}
                     </div>

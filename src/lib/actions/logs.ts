@@ -52,7 +52,10 @@ export async function saveActivityLog(
         }
         metric_value = v;
         completed = v > 0;
-      } else if (payload.completed === false) {
+      } else if (
+        payload.metricValue === null ||
+        payload.completed === false
+      ) {
         metric_value = null;
         completed = false;
       }
