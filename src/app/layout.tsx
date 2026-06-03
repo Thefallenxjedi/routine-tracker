@@ -14,12 +14,42 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  "https://routine-tracker-tawny.vercel.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Routine — Activity Tracker",
-  description: "Track daily activities and habits with simple yes/no completion",
+  description:
+    "Track daily activities and habits with yes/no or numeric metrics.",
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: [{ url: "/logo.png", type: "image/png", sizes: "512x512" }],
+    apple: [{ url: "/logo.png", type: "image/png", sizes: "512x512" }],
+    shortcut: "/logo.png",
+  },
+  openGraph: {
+    title: "Routine — Activity Tracker",
+    description:
+      "Track daily activities and habits with yes/no or numeric metrics.",
+    url: siteUrl,
+    siteName: "Routine",
+    type: "website",
+    images: [
+      {
+        url: "/logo.png",
+        width: 512,
+        height: 512,
+        alt: "Routine logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "Routine — Activity Tracker",
+    description:
+      "Track daily activities and habits with yes/no or numeric metrics.",
+    images: ["/logo.png"],
   },
 };
 
