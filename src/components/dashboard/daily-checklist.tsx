@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useOptimistic, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { format, parseISO, subDays } from "date-fns";
 import { toast } from "sonner";
 import { CalendarDays } from "lucide-react";
@@ -30,21 +31,35 @@ function formatSelectedDate(dateStr: string): string {
   return format(new Date(y, m - 1, d), "EEEE, MMM d");
 }
 
+function logsToMap(logs: ActivityLog[], date: string): Map<string, boolean> {
+  const map = new Map<string, boolean>();
+  for (const log of logs) {
+    if (log.date === date) {
+      map.set(log.activity_id, log.completed);
+    }
+  }
+  return map;
+}
+
 export function DailyChecklist({ activities, logs, today }: DailyChecklistProps) {
+  const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(today);
-  const [isPending, startTransition] = useTransition();
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const minDate = format(subDays(parseISO(`${today}T12:00:00`), 60), "yyyy-MM-dd");
 
-  const logsForDate = useMemo(() => {
-    const map = new Map<string, boolean>();
-    for (const log of logs) {
-      if (log.date === selectedDate) {
-        map.set(log.activity_id, log.completed);
-      }
-    }
-    return map;
-  }, [logs, selectedDate]);
+  const serverCompleted = useMemo(
+    () => logsToMap(logs, selectedDate),
+    [logs, selectedDate]
+  );
+
+  const [completed, setCompleted] = useState<Map<string, boolean>>(
+    () => serverCompleted
+  );
+
+  useEffect(() => {
+    setCompleted(serverCompleted);
+  }, [serverCompleted]);
 
   const visibleActivities = useMemo(
     () =>
@@ -55,22 +70,35 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
     [activities, selectedDate]
   );
 
-  const [optimisticCompleted, setOptimisticCompleted] = useOptimistic(
-    logsForDate,
-    (state, update: { activityId: string; completed: boolean }) => {
-      const next = new Map(state);
-      next.set(update.activityId, update.completed);
-      return next;
+  const scheduleDashboardRefresh = useCallback(() => {
+    if (refreshTimer.current) {
+      clearTimeout(refreshTimer.current);
     }
-  );
+    refreshTimer.current = setTimeout(() => {
+      router.refresh();
+    }, 600);
+  }, [router]);
 
-  function handleToggle(activityId: string, completed: boolean) {
-    startTransition(async () => {
-      setOptimisticCompleted({ activityId, completed });
-      const result = await toggleActivityLog(activityId, selectedDate, completed);
+  function handleToggle(activityId: string, next: boolean) {
+    const previous = completed.get(activityId) ?? false;
+
+    setCompleted((prev) => {
+      const map = new Map(prev);
+      map.set(activityId, next);
+      return map;
+    });
+
+    void toggleActivityLog(activityId, selectedDate, next).then((result) => {
       if (result.error) {
+        setCompleted((prev) => {
+          const map = new Map(prev);
+          map.set(activityId, previous);
+          return map;
+        });
         toast.error(result.error);
+        return;
       }
+      scheduleDashboardRefresh();
     });
   }
 
@@ -140,32 +168,32 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
         ) : (
           <div className="space-y-1">
             {visibleActivities.map((activity) => {
-              const completed = optimisticCompleted.get(activity.id) ?? false;
+              const isDone = completed.get(activity.id) ?? false;
               return (
                 <div
                   key={activity.id}
-                  className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
-                    isPending ? "opacity-80" : ""
-                  } ${completed ? "bg-emerald-100/70" : "bg-white/60"}`}
+                  className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 ${
+                    isDone ? "bg-emerald-100" : "bg-white/60"
+                  }`}
                 >
                   <ActivityCheck
-                    checked={completed}
+                    checked={isDone}
                     label={`Mark ${activity.name} as done`}
-                    disabled={isPending}
                     onCheckedChange={(checked) =>
                       handleToggle(activity.id, checked)
                     }
                   />
                   <span
-                    className={`flex-1 text-sm font-medium transition-all ${
-                      completed
-                        ? "text-emerald-800/80 line-through decoration-emerald-600/50"
-                        : "text-emerald-950"
+                    className={`flex-1 text-sm font-medium ${
+                      isDone ? "text-emerald-800" : "text-emerald-950"
                     }`}
                   >
                     {activity.name}
                   </span>
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge
+                    variant="secondary"
+                    className={`text-xs ${isDone ? "bg-emerald-200/80 text-emerald-900" : ""}`}
+                  >
                     {activity.category}
                   </Badge>
                 </div>
