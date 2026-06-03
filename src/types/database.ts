@@ -1,0 +1,43 @@
+export type Activity = {
+  id: string;
+  user_id: string;
+  name: string;
+  category: string;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type ActivityLog = {
+  id: string;
+  activity_id: string;
+  date: string;
+  completed: boolean;
+  created_at: string;
+};
+
+export type ActivityWithLog = Activity & {
+  todayLog?: ActivityLog;
+};
+
+export type StreakInfo = {
+  activityId: string;
+  activityName: string;
+  currentStreak: number;
+};
+
+export type DayStat = {
+  date: string;
+  completed: number;
+  total: number;
+  rate: number;
+};
+
+export const ACTIVITY_CATEGORIES = [
+  "General",
+  "Health",
+  "Learning",
+  "Work",
+  "Personal",
+] as const;
+
+export type ActivityCategory = (typeof ACTIVITY_CATEGORIES)[number];
