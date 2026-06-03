@@ -2,6 +2,7 @@ import { format, subDays, parseISO } from "date-fns";
 import { getServerSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { getMonthRange, getTodayString, getWeekRange } from "@/lib/utils/dates";
+import { normalizeActivity, normalizeActivityLog } from "@/lib/activity-metrics";
 import { getWeightAutomatic } from "@/lib/data/preferences";
 import { computeDailyProgress, computeDayStats } from "@/lib/utils/stats";
 import { calculateStreaks } from "@/lib/utils/streaks";
@@ -72,8 +73,12 @@ export async function getDashboardData() {
   if (activitiesResult.error) throw activitiesResult.error;
   if (logsResult.error) throw logsResult.error;
 
-  let activities = (activitiesResult.data ?? []) as Activity[];
-  let logs = (logsResult.data ?? []) as ActivityLog[];
+  let activities = (activitiesResult.data ?? []).map((row) =>
+    normalizeActivity(row as Record<string, unknown>)
+  );
+  let logs = (logsResult.data ?? []).map((row) =>
+    normalizeActivityLog(row as Record<string, unknown>)
+  );
 
   if (!userId) {
     activities = [];
@@ -182,11 +187,13 @@ export async function getActivitiesPageData() {
   if (activitiesResult.error) throw activitiesResult.error;
   if (logsResult.error) throw logsResult.error;
 
-  const activities = (activitiesResult.data ?? []) as Activity[];
-  const activityIds = new Set(activities.map((a) => a.id));
-  const logs = ((logsResult.data ?? []) as ActivityLog[]).filter((l) =>
-    activityIds.has(l.activity_id)
+  const activities = (activitiesResult.data ?? []).map((row) =>
+    normalizeActivity(row as Record<string, unknown>)
   );
+  const activityIds = new Set(activities.map((a) => a.id));
+  const logs = (logsResult.data ?? [])
+    .map((row) => normalizeActivityLog(row as Record<string, unknown>))
+    .filter((l) => activityIds.has(l.activity_id));
 
   const activeActivities = activities.filter((a) => a.is_active);
   const monthlyStats = computeDayStats(activeActivities, logs, monthRange.days);

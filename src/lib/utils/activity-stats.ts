@@ -1,3 +1,4 @@
+import { isActivityLogDone } from "@/lib/activity-metrics";
 import type { Activity, ActivityLog } from "@/types/database";
 
 export type ActivityDayPoint = {
@@ -13,15 +14,18 @@ export function computeActivityMonthStats(
   const logMap = new Map(
     logs
       .filter((l) => l.activity_id === activity.id)
-      .map((l) => [l.date, l.completed])
+      .map((l) => [l.date, l])
   );
   const createdDate = activity.created_at.slice(0, 10);
 
-  return monthDays.map((date) => ({
-    date,
-    completed:
-      date >= createdDate ? (logMap.get(date) ?? false) : false,
-  }));
+  return monthDays.map((date) => {
+    const log = logMap.get(date);
+    return {
+      date,
+      completed:
+        date >= createdDate ? isActivityLogDone(log, activity) : false,
+    };
+  });
 }
 
 export function computeActivityLinePoints(points: ActivityDayPoint[]): number[] {

@@ -6,9 +6,16 @@ import { useRouter } from "next/navigation";
 import { format, parseISO, subDays } from "date-fns";
 import { toast } from "sonner";
 import { CalendarDays } from "lucide-react";
-import { toggleActivityLog } from "@/lib/actions/logs";
+import { saveActivityLog, toggleActivityLog } from "@/lib/actions/logs";
+import {
+  formatMetricValue,
+  getActivityMetricUnit,
+  getMetricPreset,
+  isActivityLogDone,
+} from "@/lib/activity-metrics";
 import { ActivityCheck } from "@/components/dashboard/activity-check";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -26,17 +33,35 @@ type DailyChecklistProps = {
   today: string;
 };
 
+type LogState = {
+  done: boolean;
+  metricValue: string;
+};
+
 function formatSelectedDate(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
   return format(new Date(y, m - 1, d), "EEEE, MMM d");
 }
 
-function logsToMap(logs: ActivityLog[], date: string): Map<string, boolean> {
-  const map = new Map<string, boolean>();
+function logsToState(
+  activities: Activity[],
+  logs: ActivityLog[],
+  date: string
+): Map<string, LogState> {
+  const activityMap = new Map(activities.map((a) => [a.id, a]));
+  const map = new Map<string, LogState>();
+
   for (const log of logs) {
-    if (log.date === date) {
-      map.set(log.activity_id, log.completed);
-    }
+    if (log.date !== date) continue;
+    const activity = activityMap.get(log.activity_id);
+    if (!activity) continue;
+
+    const done = isActivityLogDone(log, activity);
+    map.set(log.activity_id, {
+      done,
+      metricValue:
+        log.metric_value != null ? String(log.metric_value) : "",
+    });
   }
   return map;
 }
@@ -48,18 +73,18 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
 
   const minDate = format(subDays(parseISO(`${today}T12:00:00`), 60), "yyyy-MM-dd");
 
-  const serverCompleted = useMemo(
-    () => logsToMap(logs, selectedDate),
-    [logs, selectedDate]
+  const serverState = useMemo(
+    () => logsToState(activities, logs, selectedDate),
+    [activities, logs, selectedDate]
   );
 
-  const [completed, setCompleted] = useState<Map<string, boolean>>(
-    () => serverCompleted
+  const [logState, setLogState] = useState<Map<string, LogState>>(
+    () => serverState
   );
 
   useEffect(() => {
-    setCompleted(serverCompleted);
-  }, [serverCompleted]);
+    setLogState(serverState);
+  }, [serverState]);
 
   const visibleActivities = useMemo(
     () =>
@@ -79,18 +104,18 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
     }, 600);
   }, [router]);
 
-  function handleToggle(activityId: string, next: boolean) {
-    const previous = completed.get(activityId) ?? false;
+  function handleYesNoToggle(activityId: string, next: boolean) {
+    const previous = logState.get(activityId) ?? { done: false, metricValue: "" };
 
-    setCompleted((prev) => {
+    setLogState((prev) => {
       const map = new Map(prev);
-      map.set(activityId, next);
+      map.set(activityId, { ...previous, done: next });
       return map;
     });
 
     void toggleActivityLog(activityId, selectedDate, next).then((result) => {
       if (result.error) {
-        setCompleted((prev) => {
+        setLogState((prev) => {
           const map = new Map(prev);
           map.set(activityId, previous);
           return map;
@@ -100,6 +125,73 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
       }
       scheduleDashboardRefresh();
     });
+  }
+
+  function handleMetricSave(activity: Activity) {
+    const previous = logState.get(activity.id) ?? { done: false, metricValue: "" };
+    const raw = previous.metricValue.trim();
+    const value = raw === "" ? null : parseFloat(raw);
+
+    if (value !== null && (Number.isNaN(value) || value < 0)) {
+      toast.error("Enter a valid number");
+      return;
+    }
+
+    const nextDone = value !== null && value > 0;
+
+    setLogState((prev) => {
+      const map = new Map(prev);
+      map.set(activity.id, {
+        done: nextDone,
+        metricValue: raw,
+      });
+      return map;
+    });
+
+    void saveActivityLog(activity.id, selectedDate, { metricValue: value }).then(
+      (result) => {
+        if (result.error) {
+          setLogState((prev) => {
+            const map = new Map(prev);
+            map.set(activity.id, previous);
+            return map;
+          });
+          toast.error(result.error);
+          return;
+        }
+        toast.success(
+          value != null && value > 0
+            ? `Logged ${formatMetricValue(value, activity)}`
+            : "Entry cleared"
+        );
+        scheduleDashboardRefresh();
+      }
+    );
+  }
+
+  function handleMetricClear(activity: Activity) {
+    const previous = logState.get(activity.id) ?? { done: false, metricValue: "" };
+
+    setLogState((prev) => {
+      const map = new Map(prev);
+      map.set(activity.id, { done: false, metricValue: "" });
+      return map;
+    });
+
+    void saveActivityLog(activity.id, selectedDate, { metricValue: null }).then(
+      (result) => {
+        if (result.error) {
+          setLogState((prev) => {
+            const map = new Map(prev);
+            map.set(activity.id, previous);
+            return map;
+          });
+          toast.error(result.error);
+        } else {
+          scheduleDashboardRefresh();
+        }
+      }
+    );
   }
 
   const isToday = selectedDate === today;
@@ -129,7 +221,7 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
         <CardTitle>Daily Checklist</CardTitle>
         <CardDescription>
           {isToday
-            ? "Mark activities done for today"
+            ? "Mark activities or log numbers for today"
             : `Backfilling for ${formatSelectedDate(selectedDate)}`}
         </CardDescription>
       </CardHeader>
@@ -166,36 +258,105 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
             No activities existed on this date yet.
           </p>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-2">
             {visibleActivities.map((activity) => {
-              const isDone = completed.get(activity.id) ?? false;
+              const state = logState.get(activity.id) ?? {
+                done: false,
+                metricValue: "",
+              };
+              const unit = getActivityMetricUnit(activity);
+              const preset = getMetricPreset(activity.metric_key);
+              const isNumeric = activity.tracking_type === "numeric";
+
               return (
                 <div
                   key={activity.id}
-                  className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 ${
-                    isDone ? "bg-emerald-100" : "bg-white/60"
+                  className={`rounded-lg px-3 py-3 ${
+                    state.done ? "bg-emerald-100" : "bg-white/60"
                   }`}
                 >
-                  <ActivityCheck
-                    checked={isDone}
-                    label={`Mark ${activity.name} as done`}
-                    onCheckedChange={(checked) =>
-                      handleToggle(activity.id, checked)
-                    }
-                  />
-                  <span
-                    className={`flex-1 text-sm font-medium ${
-                      isDone ? "text-emerald-800" : "text-emerald-950"
-                    }`}
-                  >
-                    {activity.name}
-                  </span>
-                  <Badge
-                    variant="secondary"
-                    className={`text-xs ${isDone ? "bg-emerald-200/80 text-emerald-900" : ""}`}
-                  >
-                    {activity.category}
-                  </Badge>
+                  <div className="flex items-start gap-3">
+                    {isNumeric ? (
+                      <div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-700">
+                        #
+                      </div>
+                    ) : (
+                      <ActivityCheck
+                        checked={state.done}
+                        label={`Mark ${activity.name} as done`}
+                        onCheckedChange={(checked) =>
+                          handleYesNoToggle(activity.id, checked)
+                        }
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span
+                          className={`text-sm font-medium ${
+                            state.done ? "text-emerald-800" : "text-emerald-950"
+                          }`}
+                        >
+                          {activity.name}
+                        </span>
+                        <Badge variant="secondary" className="text-xs">
+                          {activity.category}
+                        </Badge>
+                        {isNumeric && unit && (
+                          <Badge className="bg-emerald-600/10 text-xs text-emerald-800">
+                            {unit}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {isNumeric && (
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <Input
+                            type="number"
+                            step="any"
+                            min="0"
+                            placeholder={preset?.placeholder ?? "0"}
+                            value={state.metricValue}
+                            onChange={(e) =>
+                              setLogState((prev) => {
+                                const map = new Map(prev);
+                                map.set(activity.id, {
+                                  ...state,
+                                  metricValue: e.target.value,
+                                });
+                                return map;
+                              })
+                            }
+                            className="h-9 max-w-[140px] border-stone-300 bg-white"
+                            aria-label={`${activity.name} value in ${unit || "units"}`}
+                          />
+                          {unit && (
+                            <span className="text-xs font-medium text-muted-foreground">
+                              {unit}
+                            </span>
+                          )}
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="h-9 bg-emerald-600 hover:bg-emerald-700"
+                            onClick={() => handleMetricSave(activity)}
+                          >
+                            Save
+                          </Button>
+                          {state.done && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="h-9 text-muted-foreground"
+                              onClick={() => handleMetricClear(activity)}
+                            >
+                              Clear
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               );
             })}

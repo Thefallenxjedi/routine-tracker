@@ -1,16 +1,9 @@
 import { format, parseISO, subDays } from "date-fns";
+import { isActivityLogDone } from "@/lib/activity-metrics";
 import type { Activity, ActivityLog, StreakInfo } from "@/types/database";
 
 function getActivityStartDate(activity: Activity): string {
   return format(parseISO(activity.created_at), "yyyy-MM-dd");
-}
-
-function isLogCompleted(
-  logsByActivityAndDate: Map<string, Map<string, ActivityLog>>,
-  activityId: string,
-  date: string
-): boolean {
-  return logsByActivityAndDate.get(activityId)?.get(date)?.completed ?? false;
 }
 
 export function calculateStreaks(
@@ -29,11 +22,12 @@ export function calculateStreaks(
 
   return activities.map((activity) => {
     const startDate = getActivityStartDate(activity);
+    const activityLogs = logsByActivityAndDate.get(activity.id);
     let streak = 0;
     let currentDate = today;
 
-    // If today isn't completed, start counting from yesterday
-    if (!isLogCompleted(logsByActivityAndDate, activity.id, today)) {
+    const todayLog = activityLogs?.get(today);
+    if (!isActivityLogDone(todayLog, activity)) {
       const yesterday = format(
         subDays(parseISO(`${today}T12:00:00`), 1),
         "yyyy-MM-dd"
@@ -42,7 +36,8 @@ export function calculateStreaks(
     }
 
     while (currentDate >= startDate) {
-      if (isLogCompleted(logsByActivityAndDate, activity.id, currentDate)) {
+      const log = activityLogs?.get(currentDate);
+      if (isActivityLogDone(log, activity)) {
         streak++;
         currentDate = format(
           subDays(parseISO(`${currentDate}T12:00:00`), 1),

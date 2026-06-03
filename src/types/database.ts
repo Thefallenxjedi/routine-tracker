@@ -1,9 +1,14 @@
+export type TrackingType = "yes_no" | "numeric";
+
 export type Activity = {
   id: string;
   user_id: string;
   name: string;
   category: string;
   is_active: boolean;
+  tracking_type: TrackingType;
+  metric_key: string;
+  metric_label: string | null;
   created_at: string;
 };
 
@@ -12,6 +17,7 @@ export type ActivityLog = {
   activity_id: string;
   date: string;
   completed: boolean;
+  metric_value: number | null;
   created_at: string;
 };
 

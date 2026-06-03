@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireServerSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { getMetricPreset } from "@/lib/activity-metrics";
 import { ACTIVITY_CATEGORIES, type ActivityCategory } from "@/types/database";
 
 function validateCategory(category: string): ActivityCategory {
@@ -11,10 +12,49 @@ function validateCategory(category: string): ActivityCategory {
     : "General";
 }
 
-export async function createActivity(name: string, category: string) {
+function resolveTracking(metricKey: string, customLabel?: string) {
+  const preset = getMetricPreset(metricKey);
+  if (!preset) {
+    return {
+      tracking_type: "yes_no" as const,
+      metric_key: "yes_no",
+      metric_label: null as string | null,
+    };
+  }
+
+  if (preset.key === "custom") {
+    const label = customLabel?.trim();
+    if (!label) {
+      return { error: "Enter a custom unit label (e.g. miles, glasses)" };
+    }
+    return {
+      tracking_type: "numeric" as const,
+      metric_key: "custom",
+      metric_label: label,
+    };
+  }
+
+  return {
+    tracking_type: preset.trackingType,
+    metric_key: preset.key,
+    metric_label: null as string | null,
+  };
+}
+
+export async function createActivity(
+  name: string,
+  category: string,
+  metricKey: string,
+  customMetricLabel?: string
+) {
   const trimmed = name.trim();
   if (!trimmed) {
     return { error: "Name is required" };
+  }
+
+  const tracking = resolveTracking(metricKey, customMetricLabel);
+  if ("error" in tracking) {
+    return { error: tracking.error };
   }
 
   try {
@@ -24,6 +64,9 @@ export async function createActivity(name: string, category: string) {
       user_id: userId,
       name: trimmed,
       category: validateCategory(category),
+      tracking_type: tracking.tracking_type,
+      metric_key: tracking.metric_key,
+      metric_label: tracking.metric_label,
     });
 
     if (error) {
@@ -41,11 +84,18 @@ export async function createActivity(name: string, category: string) {
 export async function updateActivity(
   id: string,
   name: string,
-  category: string
+  category: string,
+  metricKey: string,
+  customMetricLabel?: string
 ) {
   const trimmed = name.trim();
   if (!trimmed) {
     return { error: "Name is required" };
+  }
+
+  const tracking = resolveTracking(metricKey, customMetricLabel);
+  if ("error" in tracking) {
+    return { error: tracking.error };
   }
 
   try {
@@ -53,7 +103,13 @@ export async function updateActivity(
 
     const { error } = await supabase
       .from("activities")
-      .update({ name: trimmed, category: validateCategory(category) })
+      .update({
+        name: trimmed,
+        category: validateCategory(category),
+        tracking_type: tracking.tracking_type,
+        metric_key: tracking.metric_key,
+        metric_label: tracking.metric_label,
+      })
       .eq("id", id)
       .eq("user_id", userId);
 

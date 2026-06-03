@@ -1,11 +1,12 @@
 # Routine — Personal Activity Tracker
 
-Track daily activities and habits with simple yes/no completion. Built with Next.js, Supabase, and shadcn/ui.
+Track daily activities and habits with yes/no or numeric metrics (km, steps, minutes, and more). Built with Next.js, Supabase, and shadcn/ui.
 
 ## Features
 
 - **Google auth** — sign in or sign up with Google via Supabase
-- **Daily checklist** — mark activities complete with optimistic UI
+- **Activity metrics** — yes/no checkboxes or numeric tracking with preset units (km, steps, minutes, reps, pages, liters, kcal, custom)
+- **Daily checklist** — yes/no toggle or numeric input with save/clear
 - **Streaks** — per-activity consecutive day tracking
 - **Analytics** — daily progress, weekly bar chart, monthly heatmap
 - **Activity management** — create, edit, and archive activities
@@ -32,6 +33,8 @@ npm install
 2. Run the migrations via the SQL Editor:
    - `supabase/migrations/001_initial_schema.sql`
    - `supabase/migrations/002_weight_logs.sql`
+   - `supabase/migrations/003_user_preferences.sql`
+   - `supabase/migrations/004_activity_metrics.sql`
 3. Enable **Google** under Authentication → Providers → Google
 4. Add your Google OAuth Client ID and Client Secret (see below)
 

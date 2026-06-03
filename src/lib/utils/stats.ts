@@ -1,9 +1,16 @@
+import { isActivityLogDone } from "@/lib/activity-metrics";
 import type { Activity, ActivityLog, DayStat } from "@/types/database";
 
-function buildLogIndex(logs: ActivityLog[]): Map<string, Set<string>> {
+function buildLogIndex(
+  activities: Activity[],
+  logs: ActivityLog[]
+): Map<string, Set<string>> {
+  const activityMap = new Map(activities.map((a) => [a.id, a]));
   const index = new Map<string, Set<string>>();
+
   for (const log of logs) {
-    if (!log.completed) continue;
+    const activity = activityMap.get(log.activity_id);
+    if (!activity || !isActivityLogDone(log, activity)) continue;
     if (!index.has(log.date)) {
       index.set(log.date, new Set());
     }
@@ -24,7 +31,7 @@ export function computeDayStats(
   logs: ActivityLog[],
   dates: string[]
 ): DayStat[] {
-  const logIndex = buildLogIndex(logs);
+  const logIndex = buildLogIndex(activities, logs);
 
   return dates.map((date) => {
     const total = getActivityCountForDate(activities, date);
@@ -45,8 +52,8 @@ export function computeDailyProgress(
   );
 
   const total = activeActivities.length;
-  const completed = activeActivities.filter(
-    (a) => todayLogs.get(a.id)?.completed
+  const completed = activeActivities.filter((a) =>
+    isActivityLogDone(todayLogs.get(a.id), a)
   ).length;
   const rate = total > 0 ? completed / total : 0;
 

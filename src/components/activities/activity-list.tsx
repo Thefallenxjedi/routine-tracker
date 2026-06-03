@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
+import { MetricsReference } from "@/components/activities/metrics-reference";
 import { ActivityAnalytics } from "@/components/dashboard/activity-analytics";
 import { ActivityFormDialog } from "@/components/activities/activity-form-dialog";
 import { ActivityRow } from "@/components/activities/activity-row";
@@ -55,6 +56,8 @@ export function ActivityList({
           New
         </Button>
       </div>
+
+      <MetricsReference />
 
       <ActivityAnalytics
         activities={activities}
