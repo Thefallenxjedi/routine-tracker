@@ -4,7 +4,7 @@ Track daily activities and habits with simple yes/no completion. Built with Next
 
 ## Features
 
-- **Email + password auth** — sign up and sign in via Supabase
+- **Google auth** — sign in or sign up with Google via Supabase
 - **Daily checklist** — mark activities complete with optimistic UI
 - **Streaks** — per-activity consecutive day tracking
 - **Analytics** — daily progress, weekly bar chart, monthly heatmap
@@ -30,7 +30,19 @@ npm install
 
 1. Create a project at [supabase.com](https://supabase.com)
 2. Run the migration in `supabase/migrations/001_initial_schema.sql` via the SQL Editor
-3. Enable Email auth under Authentication → Providers → Email, and turn on **Email + Password**
+3. Enable **Google** under Authentication → Providers → Google
+4. Add your Google OAuth Client ID and Client Secret (see below)
+
+#### Google OAuth credentials
+
+1. Open [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials
+2. Create an **OAuth 2.0 Client ID** (Web application)
+3. Add **Authorized redirect URIs**:
+   ```
+   https://<your-project-ref>.supabase.co/auth/v1/callback
+   ```
+   Find your project ref in Supabase → Settings → API → Project URL.
+4. Copy the Client ID and Client Secret into Supabase → Authentication → Providers → Google
 
 ### 3. Configure environment
 
@@ -45,16 +57,16 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-### 4. Configure auth URLs (optional, for email confirmation)
+### 4. Configure auth redirect URLs
 
-If email confirmation is enabled in Supabase, add these under Authentication → URL Configuration:
+Add these under Supabase → Authentication → URL Configuration:
 
 | Setting | Value |
 |---------|-------|
-| Site URL | `http://localhost:3000` (dev) or your Vercel URL (prod) |
+| Site URL | `http://localhost:3000` (dev) or `https://routine-tracker-tawny.vercel.app` (prod) |
 | Redirect URLs | `http://localhost:3000/auth/callback`, `http://localhost:3001/auth/callback`, `https://routine-tracker-tawny.vercel.app/auth/callback` |
 
-**Note:** If port 3000 is busy, Next.js uses 3001. Add both redirect URLs in Supabase, or run `npm run dev -- -p 3000` after freeing port 3000.
+**Note:** If port 3000 is busy, Next.js uses 3001. Add both localhost redirect URLs.
 
 ### 5. Run locally
 
@@ -81,7 +93,7 @@ src/
 ├── app/
 │   ├── (app)/          # Authenticated routes (dashboard, activities)
 │   ├── (auth)/         # Login page
-│   └── auth/callback/  # Email confirmation handler (if enabled)
+│   └── auth/callback/  # OAuth callback handler
 ├── components/
 │   ├── dashboard/      # Progress, checklist, streaks, charts
 │   ├── activities/     # CRUD UI
