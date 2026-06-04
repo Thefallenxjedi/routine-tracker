@@ -13,10 +13,11 @@ type ValueTrendChartProps = {
   unit: string;
   trendLabel?: string;
   emptyMessage?: string;
+  formatValue?: (value: number) => string;
 };
 
-function formatPointValue(value: number, unit: string) {
-  const n = Number.isInteger(value) ? String(value) : value.toFixed(1);
+function formatPointValue(value: number, unit: string, formatValue?: (value: number) => string) {
+  const n = formatValue ? formatValue(value) : Number.isInteger(value) ? String(value) : value.toFixed(1);
   return unit ? `${n} ${unit}` : n;
 }
 
@@ -25,6 +26,7 @@ export function ValueTrendChart({
   unit,
   trendLabel = "Trend",
   emptyMessage = "Log values on your dashboard to see a chart here.",
+  formatValue,
 }: ValueTrendChartProps) {
   const gradientId = useId();
 
@@ -75,8 +77,8 @@ export function ValueTrendChart({
         <span>{trendLabel}</span>
         {chartData.length > 1 && (
           <span>
-            {formatPointValue(chartData[0].value, unit)} →{" "}
-            {formatPointValue(chartData[chartData.length - 1].value, unit)}
+            {formatPointValue(chartData[0].value, unit, formatValue)} →{" "}
+            {formatPointValue(chartData[chartData.length - 1].value, unit, formatValue)}
           </span>
         )}
       </div>
@@ -84,10 +86,10 @@ export function ValueTrendChart({
         {chartData.length === 1 ? (
           <div
             className="flex h-44 flex-col items-center justify-end"
-            aria-label={`${formatPointValue(chartData[0].value, unit)} on ${formatDisplayDate(chartData[0].date)}`}
+            aria-label={`${formatPointValue(chartData[0].value, unit, formatValue)} on ${formatDisplayDate(chartData[0].date)}`}
           >
             <p className="mb-2 text-lg font-bold tabular-nums text-emerald-800">
-              {formatPointValue(chartData[0].value, unit)}
+              {formatPointValue(chartData[0].value, unit, formatValue)}
             </p>
             <div
               className="w-20 rounded-t-lg bg-gradient-to-t from-emerald-700 to-emerald-500 shadow-md shadow-emerald-900/10 transition-all"

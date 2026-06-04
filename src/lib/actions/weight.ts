@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { requireServerSession } from "@/lib/auth/session";
 
 export async function saveWeight(date: string, weightKg: number) {
-  if (!weightKg || weightKg <= 0 || weightKg >= 500) {
+  const rounded = Math.round(weightKg * 100) / 100;
+
+  if (!rounded || rounded <= 0 || rounded >= 500) {
     return { error: "Enter a valid weight in kg" };
   }
 
@@ -15,7 +17,7 @@ export async function saveWeight(date: string, weightKg: number) {
       {
         user_id: userId,
         date,
-        weight_kg: weightKg,
+        weight_kg: rounded,
       },
       { onConflict: "user_id,date" }
     );

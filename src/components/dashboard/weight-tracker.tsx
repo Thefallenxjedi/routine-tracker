@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Pencil, Scale } from "lucide-react";
 import { saveWeight } from "@/lib/actions/weight";
+import { formatWeightDisplay, formatWeightKg, roundWeightKg } from "@/lib/utils/weight";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,7 +50,7 @@ export function WeightTracker({
     if (!weightAutomatic) {
       setLoggedToday(fromServer);
       if (fromServer) {
-        setWeight(String(fromServer.weight_kg));
+        setWeight(formatWeightKg(fromServer.weight_kg));
       }
       return;
     }
@@ -73,7 +74,7 @@ export function WeightTracker({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const value = parseFloat(weight);
+    const value = roundWeightKg(parseFloat(weight));
     if (Number.isNaN(value)) {
       toast.error("Enter a valid number");
       return;
@@ -136,10 +137,10 @@ export function WeightTracker({
             <CardDescription>
               {weightAutomatic
                 ? hasLoggedToday
-                  ? `Logged today: ${loggedToday.weight_kg} kg`
+                  ? `Logged today: ${formatWeightDisplay(loggedToday.weight_kg)}`
                   : "Log your weight once per day (kg)"
                 : hasLoggedToday
-                  ? `Manual mode · today: ${loggedToday.weight_kg} kg`
+                  ? `Manual mode · today: ${formatWeightDisplay(loggedToday.weight_kg)}`
                   : "Manual mode — log or update your weight anytime"}
             </CardDescription>
           </div>
@@ -149,7 +150,7 @@ export function WeightTracker({
         {hasLoggedToday && weightAutomatic && !isEditing && (
           <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
             <p className="text-sm font-medium text-emerald-900">
-              Today: <span className="tabular-nums">{loggedToday.weight_kg} kg</span>
+              Today: <span className="tabular-nums">{formatWeightDisplay(loggedToday.weight_kg)}</span>
             </p>
             <Button
               type="button"
@@ -157,7 +158,7 @@ export function WeightTracker({
               size="sm"
               className="border-emerald-300 bg-white text-emerald-800 hover:bg-emerald-100"
               onClick={() => {
-                setWeight(String(loggedToday.weight_kg));
+                setWeight(formatWeightKg(loggedToday.weight_kg));
                 setIsEditing(true);
               }}
             >
@@ -176,7 +177,7 @@ export function WeightTracker({
               <Input
                 id="weight"
                 type="number"
-                step="0.1"
+                step="0.01"
                 min="1"
                 max="499"
                 placeholder="Enter today's weight (kg)"
@@ -217,6 +218,7 @@ export function WeightTracker({
             unit="kg"
             trendLabel="Weight trend"
             emptyMessage="Your chart will appear after you save today's weight."
+            formatValue={formatWeightKg}
           />
         ) : (
           !hasLoggedToday && (
