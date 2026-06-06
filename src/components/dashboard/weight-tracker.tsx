@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { ValueTrendChart } from "@/components/charts/value-trend-chart";
+import { WeightTrendChart } from "@/components/dashboard/weight-trend-chart";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Pencil, Scale } from "lucide-react";
@@ -120,7 +120,6 @@ export function WeightTracker({
     () =>
       [...localLogs]
         .sort((a, b) => a.date.localeCompare(b.date))
-        .slice(-30)
         .map((l) => ({ date: l.date, value: l.weight_kg })),
     [localLogs]
   );
@@ -212,20 +211,13 @@ export function WeightTracker({
           </form>
         )}
 
-        {chartPoints.length > 0 ? (
-          <ValueTrendChart
-            points={chartPoints}
-            unit="kg"
-            trendLabel="Weight trend"
-            emptyMessage="Your chart will appear after you save today's weight."
-            formatValue={formatWeightKg}
-          />
-        ) : (
-          !hasLoggedToday && (
-            <p className="text-center text-xs text-muted-foreground">
-              Your chart will appear after you save today&apos;s weight.
-            </p>
-          )
+        {(chartPoints.length > 0 || hasLoggedToday) && (
+          <WeightTrendChart points={chartPoints} today={today} />
+        )}
+        {chartPoints.length === 0 && !hasLoggedToday && (
+          <p className="text-center text-xs text-muted-foreground">
+            Your chart will appear after you save today&apos;s weight.
+          </p>
         )}
       </CardContent>
     </Card>

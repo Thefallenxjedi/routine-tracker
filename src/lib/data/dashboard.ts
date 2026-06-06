@@ -124,7 +124,7 @@ export async function getDashboardData() {
       .select("*")
       .eq("user_id", userId)
       .order("date", { ascending: true })
-      .limit(60);
+      .limit(365);
 
     if (!weightError && weightData) {
       weightLogs = weightData.map((w) => ({
