@@ -14,7 +14,7 @@ import {
   isActivityLogDone,
   isNumericActivity,
 } from "@/lib/activity-metrics";
-import { ActivityCheck } from "@/components/dashboard/activity-check";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -295,7 +295,7 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
         <CardTitle>Daily Checklist</CardTitle>
         <CardDescription>
           {isToday
-            ? "Mark activities or log numbers for today"
+            ? "Toggle activities on or off — numeric items open an input when on"
             : `Backfilling for ${formatSelectedDate(selectedDate)}`}
         </CardDescription>
       </CardHeader>
@@ -342,7 +342,10 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
               const preset = getMetricPreset(activity.metric_key);
               const isNumeric = isNumericActivity(activity);
               const isEditingMetric = editingMetricIds.has(activity.id);
-              const showMetricForm = isNumeric && (!state.done || isEditingMetric);
+              const switchOn = isNumeric
+                ? state.done || isEditingMetric
+                : state.done;
+              const showMetricForm = isNumeric && isEditingMetric;
               const savedNumericValue =
                 state.metricValue !== ""
                   ? parseFloat(state.metricValue)
@@ -359,95 +362,30 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
                     state.done ? "bg-emerald-100" : "bg-white/60"
                   }`}
                 >
-                  {showMetricForm ? (
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-medium text-emerald-950">
-                          {activity.name}
-                        </span>
-                        <Badge variant="secondary" className="text-xs">
-                          {activity.category}
-                        </Badge>
-                        {unit && (
-                          <Badge className="bg-emerald-600/10 text-xs text-emerald-800">
-                            {unit}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Input
-                          type="number"
-                          step="any"
-                          min="0"
-                          placeholder={preset?.placeholder ?? "0"}
-                          value={state.metricValue}
-                          onChange={(e) =>
-                            setLogState((prev) => {
-                              const map = new Map(prev);
-                              const current = prev.get(activity.id) ?? {
-                                done: false,
-                                metricValue: "",
-                              };
-                              map.set(activity.id, {
-                                ...current,
-                                metricValue: e.target.value,
-                              });
-                              return map;
-                            })
-                          }
-                          className="h-9 max-w-[140px] border-stone-300 bg-white"
-                          aria-label={`${activity.name} value in ${unit || "units"}`}
-                        />
-                        {unit && (
-                          <span className="text-xs font-medium text-muted-foreground">
-                            {unit}
-                          </span>
-                        )}
-                        <Button
-                          type="button"
-                          size="sm"
-                          className="h-9 bg-emerald-600 hover:bg-emerald-700"
-                          onClick={() => handleMetricSave(activity)}
-                        >
-                          Save
-                        </Button>
-                        {isEditingMetric && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            className="h-9 border-stone-300"
-                            onClick={() => cancelMetricEdit(activity.id)}
-                          >
-                            Cancel
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-3">
-                      <ActivityCheck
-                        checked={state.done}
-                        label={
-                          isNumeric
-                            ? state.done
-                              ? `Clear ${activity.name}`
-                              : `Log ${activity.name}`
-                            : `Mark ${activity.name} as done`
-                        }
-                        onCheckedChange={(checked) => {
-                          if (isNumeric) {
-                            if (!checked && state.done) {
-                              handleMetricClear(activity);
-                            } else if (checked && !state.done) {
-                              startMetricEdit(activity.id);
-                            }
+                  <div className="flex items-start gap-3">
+                    <Switch
+                      checked={switchOn}
+                      onCheckedChange={(on) => {
+                        if (isNumeric) {
+                          if (on) {
+                            startMetricEdit(activity.id);
+                          } else if (state.done) {
+                            handleMetricClear(activity);
                           } else {
-                            handleYesNoToggle(activity.id, checked);
+                            cancelMetricEdit(activity.id);
                           }
-                        }}
-                      />
-                      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                        } else {
+                          handleYesNoToggle(activity.id, on);
+                        }
+                      }}
+                      aria-label={
+                        isNumeric
+                          ? `${activity.name} — toggle on to log a value`
+                          : `Mark ${activity.name} as done`
+                      }
+                    />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span
                           className={`text-sm font-medium ${
                             state.done ? "text-emerald-800" : "text-emerald-950"
@@ -458,18 +396,80 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
                         <Badge variant="secondary" className="text-xs">
                           {activity.category}
                         </Badge>
-                        {isNumeric && state.done && savedLabel && (
-                          <button
-                            type="button"
-                            onClick={() => startMetricEdit(activity.id)}
-                            className="text-xs font-semibold tabular-nums text-emerald-700 underline-offset-2 hover:underline"
-                          >
+                        {isNumeric && unit && !showMetricForm && (
+                          <Badge className="bg-emerald-600/10 text-xs text-emerald-800">
+                            {unit}
+                          </Badge>
+                        )}
+                        {isNumeric && state.done && savedLabel && !showMetricForm && (
+                          <span className="text-xs font-semibold tabular-nums text-emerald-700">
                             {savedLabel}
-                          </button>
+                          </span>
                         )}
                       </div>
+
+                      {showMetricForm && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Input
+                            type="number"
+                            step="any"
+                            min="0"
+                            placeholder={preset?.placeholder ?? "0"}
+                            value={state.metricValue}
+                            autoFocus
+                            onChange={(e) =>
+                              setLogState((prev) => {
+                                const map = new Map(prev);
+                                const current = prev.get(activity.id) ?? {
+                                  done: false,
+                                  metricValue: "",
+                                };
+                                map.set(activity.id, {
+                                  ...current,
+                                  metricValue: e.target.value,
+                                });
+                                return map;
+                              })
+                            }
+                            className="h-9 max-w-[140px] border-stone-300 bg-white"
+                            aria-label={`${activity.name} value in ${unit || "units"}`}
+                          />
+                          {unit && (
+                            <span className="text-xs font-medium text-muted-foreground">
+                              {unit}
+                            </span>
+                          )}
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="h-9 bg-emerald-600 hover:bg-emerald-700"
+                            onClick={() => handleMetricSave(activity)}
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-9 border-stone-300"
+                            onClick={() => cancelMetricEdit(activity.id)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      )}
+
+                      {isNumeric && state.done && !showMetricForm && (
+                        <button
+                          type="button"
+                          onClick={() => startMetricEdit(activity.id)}
+                          className="text-xs font-medium text-emerald-700 underline-offset-2 hover:underline"
+                        >
+                          Edit value
+                        </button>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               );
             })}
