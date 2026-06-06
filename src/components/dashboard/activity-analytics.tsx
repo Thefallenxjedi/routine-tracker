@@ -1,11 +1,23 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
-import { formatDayLabel, formatDisplayDate, getTodayString } from "@/lib/utils/dates";
+import { useMemo, useState } from "react";
+import {
+  formatDisplayDate,
+  formatMonthYear,
+  getMonthInputValue,
+  getMonthRange,
+  getMonthRangeFromParts,
+  getPreviousMonthRange,
+  getTodayString,
+} from "@/lib/utils/dates";
 import { ActivityMetricTrend } from "@/components/activities/activity-metric-trend";
 import { isNumericActivity } from "@/lib/activity-metrics";
 import { computeActivityMonthStats } from "@/lib/utils/activity-stats";
+import { computeDayStats } from "@/lib/utils/stats";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -14,14 +26,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import type { Activity, ActivityLog, DayStat } from "@/types/database";
+import type { Activity, ActivityLog } from "@/types/database";
 
 type ActivityAnalyticsProps = {
   activities: Activity[];
   logs: ActivityLog[];
-  monthDays: string[];
-  overallStats: DayStat[];
 };
+
+type MonthPreset = "this-month" | "past-month" | "custom";
 
 const ALL_FILTER = "__all__";
 
@@ -49,37 +61,55 @@ function getActivityHeatColor(
   return "bg-white ring-1 ring-inset ring-stone-200";
 }
 
-export function ActivityAnalytics({
-  activities,
-  logs,
-  monthDays,
-  overallStats,
-}: ActivityAnalyticsProps) {
+function resolveMonthRange(
+  preset: MonthPreset,
+  customMonth: string
+): { days: string[]; label: string } {
+  if (preset === "this-month") {
+    const range = getMonthRange();
+    return { days: range.days, label: formatMonthYear(range.days[0]) };
+  }
+  if (preset === "past-month") {
+    const range = getPreviousMonthRange();
+    return { days: range.days, label: formatMonthYear(range.days[0]) };
+  }
+  const [yearStr, monthStr] = customMonth.split("-");
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  if (!year || !month) {
+    const fallback = getMonthRange();
+    return { days: fallback.days, label: formatMonthYear(fallback.days[0]) };
+  }
+  const range = getMonthRangeFromParts(year, month);
+  return { days: range.days, label: formatMonthYear(range.days[0]) };
+}
+
+export function ActivityAnalytics({ activities, logs }: ActivityAnalyticsProps) {
   const active = activities.filter((a) => a.is_active);
-  const [selectedId, setSelectedId] = useState<string>(ALL_FILTER);
-  const gradientId = useId();
   const today = getTodayString();
+
+  const [selectedId, setSelectedId] = useState<string>(ALL_FILTER);
+  const [monthPreset, setMonthPreset] = useState<MonthPreset>("this-month");
+  const [customMonth, setCustomMonth] = useState(getMonthInputValue());
+
+  const { days: monthDays, label: monthLabel } = useMemo(
+    () => resolveMonthRange(monthPreset, customMonth),
+    [monthPreset, customMonth]
+  );
 
   const isAllView = selectedId === ALL_FILTER;
   const selected = active.find((a) => a.id === selectedId);
   const selectedNumeric = selected ? isNumericActivity(selected) : false;
 
+  const overallStats = useMemo(
+    () => computeDayStats(active, logs, monthDays),
+    [active, logs, monthDays]
+  );
+
   const activityPoints = useMemo(() => {
     if (!selected || isAllView) return [];
     return computeActivityMonthStats(selected, logs, monthDays);
   }, [selected, logs, monthDays, isAllView]);
-
-  const cumulativeLineValues = useMemo(() => {
-    let cumulative = 0;
-    return overallStats.map((s) => {
-      if (s.date <= today) {
-        cumulative += s.completed;
-      }
-      return cumulative;
-    });
-  }, [overallStats, today]);
-
-  const maxLine = Math.max(...cumulativeLineValues, 1);
 
   const cumulativeScore = isAllView
     ? overallStats
@@ -87,21 +117,12 @@ export function ActivityAnalytics({
         .reduce((sum, s) => sum + s.completed, 0)
     : activityPoints.filter((p) => p.completed && p.date <= today).length;
 
-  const eligibleDays = isAllView
-    ? overallStats.filter((s) => s.date <= today && s.total > 0).length
-    : activityPoints.filter(
-        (p) =>
-          p.date <= today &&
-          selected &&
-          p.date >= selected.created_at.slice(0, 10)
-      ).length;
-
   if (active.length === 0) {
     return (
-      <Card data-onboarding="activities-heatmap" className="border-stone-200 bg-stone-50/80">
+      <Card className="border-stone-200 bg-stone-50/80">
         <CardHeader>
           <CardTitle>Activity Trends</CardTitle>
-          <CardDescription>Add activities to see heatmaps and trends.</CardDescription>
+          <CardDescription>Add activities to see heatmaps.</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -120,17 +141,19 @@ export function ActivityAnalytics({
 
   const heatCells: HeatCell[] = useMemo(() => {
     const cells: HeatCell[] = Array(startPadding).fill(null);
+    const monthEnd = monthDays[monthDays.length - 1];
 
     if (isAllView) {
       for (const stat of overallStats) {
         const isFuture = stat.date > today;
+        const inSelectedMonth = stat.date >= monthDays[0] && stat.date <= monthEnd;
         cells.push({
           date: stat.date,
           label: `${formatDisplayDate(stat.date)} — ${stat.completed}/${stat.total} done`,
           colorClass: getGithubHeatColor(
             stat.rate,
             isFuture,
-            stat.date <= today
+            inSelectedMonth && stat.date <= today
           ),
         });
       }
@@ -153,78 +176,122 @@ export function ActivityAnalytics({
 
     while (cells.length % 7 !== 0) cells.push(null);
     return cells;
-  }, [startPadding, isAllView, overallStats, activityPoints, selected, today]);
+  }, [
+    startPadding,
+    isAllView,
+    overallStats,
+    activityPoints,
+    selected,
+    today,
+    monthDays,
+  ]);
 
-  const lineWidth =
-    cumulativeLineValues.length > 1
-      ? 100 / (cumulativeLineValues.length - 1)
-      : 100;
-  const linePath = cumulativeLineValues
-    .map((v, i) => {
-      const x = i * lineWidth;
-      const y = 100 - (v / maxLine) * 90 - 5;
-      return `${i === 0 ? "M" : "L"} ${x} ${y}`;
-    })
-    .join(" ");
-
-  const totalCumulative = (() => {
-    const idx = overallStats.findLastIndex((s) => s.date <= today);
-    return idx >= 0 ? cumulativeLineValues[idx] : 0;
-  })();
+  const isCurrentMonthView =
+    monthPreset === "this-month" ||
+    (monthPreset === "custom" && customMonth === getMonthInputValue());
 
   return (
-    <Card data-onboarding="activities-heatmap" className="border-stone-200 bg-stone-50/80">
-      <CardHeader>
-        <CardTitle>Activity Trends</CardTitle>
-        <CardDescription>
-          Filter by activity — GitHub-style heatmap and completion trend this
-          month
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setSelectedId(ALL_FILTER)}
-            className={cn(
-              "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-              isAllView
-                ? "border-emerald-600 bg-emerald-600 text-white"
-                : "border-stone-300 bg-white text-emerald-800 hover:bg-emerald-50"
-            )}
-          >
-            All
-          </button>
-          {active.map((activity) => (
-            <button
-              key={activity.id}
+    <Card className="border-stone-200 bg-stone-50/80">
+      <CardHeader className="space-y-4 pb-2">
+        <div>
+          <CardTitle>Activity Trends</CardTitle>
+          <CardDescription>
+            Heatmap by activity — {monthLabel}
+          </CardDescription>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          {(
+            [
+              { id: "this-month" as const, label: "This month" },
+              { id: "past-month" as const, label: "Past month" },
+              { id: "custom" as const, label: "Custom month" },
+            ] as const
+          ).map(({ id, label }) => (
+            <Button
+              key={id}
               type="button"
-              onClick={() => setSelectedId(activity.id)}
+              size="sm"
+              variant={monthPreset === id ? "default" : "outline"}
               className={cn(
-                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                selectedId === activity.id
-                  ? "border-emerald-600 bg-emerald-600 text-white"
-                  : "border-stone-300 bg-white text-emerald-800 hover:bg-emerald-50"
+                "h-8 text-xs",
+                monthPreset === id
+                  ? "bg-emerald-600 hover:bg-emerald-700"
+                  : "border-stone-300"
               )}
+              onClick={() => setMonthPreset(id)}
             >
-              {activity.name}
-            </button>
+              {label}
+            </Button>
           ))}
         </div>
 
-        <div className="flex items-center justify-between rounded-lg border border-stone-200 bg-stone-100 px-4 py-3">
+        {monthPreset === "custom" && (
+          <div className="rounded-lg border border-stone-200 bg-white p-3">
+            <Label htmlFor="heatmap-month" className="text-xs text-muted-foreground">
+              Pick month and year
+            </Label>
+            <Input
+              id="heatmap-month"
+              type="month"
+              value={customMonth}
+              max={getMonthInputValue()}
+              onChange={(e) => setCustomMonth(e.target.value)}
+              className="mt-1 max-w-[200px] border-stone-300 bg-white"
+            />
+          </div>
+        )}
+      </CardHeader>
+
+      <CardContent className="space-y-5">
+        <div className="rounded-lg border border-stone-200 bg-white p-3">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Filter activity
+          </p>
+          <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto pr-1">
+            <button
+              type="button"
+              onClick={() => setSelectedId(ALL_FILTER)}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                isAllView
+                  ? "border-emerald-600 bg-emerald-600 text-white"
+                  : "border-stone-200 bg-stone-50 text-emerald-800 hover:bg-emerald-50"
+              )}
+            >
+              All
+            </button>
+            {active.map((activity) => (
+              <button
+                key={activity.id}
+                type="button"
+                onClick={() => setSelectedId(activity.id)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  selectedId === activity.id
+                    ? "border-emerald-600 bg-emerald-600 text-white"
+                    : "border-stone-200 bg-stone-50 text-emerald-800 hover:bg-emerald-50"
+                )}
+              >
+                {activity.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-3">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-xs font-medium uppercase tracking-wide text-emerald-800/70">
               {isAllView
-                ? "Cumulative score"
+                ? "Total completions"
                 : selectedNumeric
                   ? "Days logged"
                   : "Days completed"}
             </p>
             <p className="text-3xl font-bold tabular-nums text-emerald-900">
               {cumulativeScore}
-              <span className="ml-1 text-base font-normal text-emerald-700">
-                {isAllView ? "total this month" : "this month"}
+              <span className="ml-1 text-sm font-normal text-emerald-700">
+                in {monthLabel}
               </span>
             </p>
           </div>
@@ -233,10 +300,23 @@ export function ActivityAnalytics({
           )}
         </div>
 
-        <div>
-          <p className="mb-2 text-xs font-medium text-muted-foreground">
-            Monthly heatmap
-          </p>
+        <div className="rounded-lg border border-stone-200 bg-white p-4">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <p className="text-sm font-medium text-emerald-950">
+              {monthLabel} heatmap
+            </p>
+            {isAllView && (
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <span>Less</span>
+                <div className="size-3 rounded-sm bg-white ring-1 ring-stone-200" />
+                <div className="size-3 rounded-sm bg-emerald-200" />
+                <div className="size-3 rounded-sm bg-emerald-400" />
+                <div className="size-3 rounded-sm bg-emerald-500" />
+                <div className="size-3 rounded-sm bg-emerald-700" />
+                <span>More</span>
+              </div>
+            )}
+          </div>
           <div className="mb-1 grid grid-cols-7 gap-1.5">
             {dayLabels.map((label) => (
               <div
@@ -252,83 +332,25 @@ export function ActivityAnalytics({
               if (!cell) {
                 return <div key={`empty-${i}`} className="aspect-square" />;
               }
+              const highlightToday =
+                isCurrentMonthView && cell.date === today;
               return (
                 <div
                   key={cell.date}
                   title={cell.label}
                   className={cn(
-                    "aspect-square rounded-sm transition-colors",
+                    "aspect-square rounded-md transition-colors",
                     cell.colorClass,
-                    cell.date === today &&
-                      "ring-2 ring-emerald-700 ring-offset-1"
+                    highlightToday && "ring-2 ring-emerald-700 ring-offset-1"
                   )}
                 />
               );
             })}
           </div>
-          {isAllView && (
-            <div className="mt-3 flex items-center justify-end gap-1 text-[10px] text-muted-foreground">
-              <span>Less</span>
-              <div className="size-3 rounded-sm bg-white ring-1 ring-stone-200" />
-              <div className="size-3 rounded-sm bg-emerald-200" />
-              <div className="size-3 rounded-sm bg-emerald-400" />
-              <div className="size-3 rounded-sm bg-emerald-500" />
-              <div className="size-3 rounded-sm bg-emerald-700" />
-              <span>More</span>
-            </div>
-          )}
         </div>
 
         {!isAllView && selectedNumeric && selected && (
           <ActivityMetricTrend activity={selected} logs={logs} />
-        )}
-
-        {isAllView && (
-          <div>
-            <p className="mb-2 text-xs font-medium text-muted-foreground">
-              Cumulative trend
-              {eligibleDays > 0 && (
-                <span className="ml-1 text-emerald-700">(max {maxLine})</span>
-              )}
-            </p>
-            <div className="rounded-lg border border-stone-200 bg-white p-3">
-              <svg
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-                className="h-32 w-full"
-                aria-hidden
-              >
-                <defs>
-                  <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                {cumulativeLineValues.length > 0 && (
-                  <>
-                    <path
-                      d={`${linePath} L 100 100 L 0 100 Z`}
-                      fill={`url(#${gradientId})`}
-                    />
-                    <path
-                      d={linePath}
-                      fill="none"
-                      stroke="#059669"
-                      strokeWidth="2.5"
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  </>
-                )}
-              </svg>
-              <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-                <span>{formatDayLabel(monthDays[0])}</span>
-                <span className="font-medium text-emerald-700">
-                  Total: {totalCumulative}
-                </span>
-                <span>{formatDayLabel(monthDays[monthDays.length - 1])}</span>
-              </div>
-            </div>
-          </div>
         )}
       </CardContent>
     </Card>

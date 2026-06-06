@@ -5,6 +5,7 @@ import {
   format,
   startOfMonth,
   startOfWeek,
+  subMonths,
 } from "date-fns";
 
 export function getTodayString(): string {
@@ -29,6 +30,24 @@ export function getMonthRange(referenceDate: Date = new Date()) {
     end: format(end, "yyyy-MM-dd"),
     days: eachDayOfInterval({ start, end }).map((d) => format(d, "yyyy-MM-dd")),
   };
+}
+
+export function getPreviousMonthRange(referenceDate: Date = new Date()) {
+  return getMonthRange(subMonths(referenceDate, 1));
+}
+
+export function getMonthRangeFromParts(year: number, month: number) {
+  return getMonthRange(new Date(year, month - 1, 1));
+}
+
+export function formatMonthYear(dateStr: string): string {
+  const [year, month] = dateStr.split("-").map(Number);
+  return format(new Date(year, month - 1, 1), "MMMM yyyy");
+}
+
+/** YYYY-MM for `<input type="month">` */
+export function getMonthInputValue(referenceDate: Date = new Date()): string {
+  return format(referenceDate, "yyyy-MM");
 }
 
 export function formatDisplayDate(dateStr: string): string {

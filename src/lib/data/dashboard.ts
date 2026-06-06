@@ -1,4 +1,4 @@
-import { format, subDays, parseISO } from "date-fns";
+import { format, subDays, subMonths, parseISO } from "date-fns";
 import { getServerSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { getMonthRange, getTodayString, getWeekRange } from "@/lib/utils/dates";
@@ -39,14 +39,25 @@ export async function getDashboardData() {
   const today = getTodayString();
   const weekRange = getWeekRange();
   const monthRange = getMonthRange();
+  const prevMonthRange = getMonthRange(subMonths(new Date(), 1));
   const userName = await getUserDisplayName();
 
   const backfillStart = format(
     subDays(parseISO(`${today}T12:00:00`), 60),
     "yyyy-MM-dd"
   );
+  const historyStart = format(
+    subMonths(parseISO(`${today}T12:00:00`), 13),
+    "yyyy-MM-dd"
+  );
 
-  const rangeStart = [weekRange.start, monthRange.start, backfillStart].sort()[0];
+  const rangeStart = [
+    weekRange.start,
+    monthRange.start,
+    prevMonthRange.start,
+    backfillStart,
+    historyStart,
+  ].sort()[0];
   const rangeEnd =
     monthRange.end > weekRange.end ? monthRange.end : weekRange.end;
 

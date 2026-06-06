@@ -33,8 +33,6 @@ export default async function DashboardPage() {
           <ActivityAnalytics
             activities={data.activities}
             logs={data.logs}
-            monthDays={data.monthDays}
-            overallStats={data.monthlyStats}
           />
         </>
       ) : (
