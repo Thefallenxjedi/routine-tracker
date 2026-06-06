@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format, parseISO, subDays } from "date-fns";
 import { toast } from "sonner";
@@ -272,20 +273,32 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
 
   if (activities.length === 0) {
     return (
-      <Card className="border-stone-200 bg-stone-50/80">
-        <CardHeader>
-          <CardTitle>Daily Checklist</CardTitle>
-          <CardDescription>No activities yet</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            <Link href="/activities" className="font-medium text-emerald-600 hover:underline">
-              Create your first activity
-            </Link>{" "}
-            to start tracking.
+      <div className="space-y-4">
+        <div className="rounded-xl border-2 border-emerald-400 bg-gradient-to-br from-emerald-500 to-emerald-700 p-6 text-center shadow-lg">
+          <p className="text-sm font-medium uppercase tracking-wide text-emerald-100">
+            Get started
           </p>
-        </CardContent>
-      </Card>
+          <h2 className="mt-1 text-xl font-bold text-white">
+            Add your first activity
+          </h2>
+          <p className="mt-2 text-sm text-emerald-50">
+            Create habits and metrics to track every day from your dashboard.
+          </p>
+          <Link
+            href="/activities"
+            className="mt-4 inline-flex h-10 items-center justify-center rounded-md bg-white px-6 text-sm font-semibold text-emerald-800 shadow-sm transition-colors hover:bg-emerald-50"
+          >
+            <Plus className="mr-2 size-4" />
+            Add activity
+          </Link>
+        </div>
+        <Card className="border-stone-200 bg-stone-50/80">
+          <CardHeader>
+            <CardTitle>Daily Checklist</CardTitle>
+            <CardDescription>No activities yet</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
     );
   }
 
@@ -363,27 +376,6 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <Switch
-                      checked={switchOn}
-                      onCheckedChange={(on) => {
-                        if (isNumeric) {
-                          if (on) {
-                            startMetricEdit(activity.id);
-                          } else if (state.done) {
-                            handleMetricClear(activity);
-                          } else {
-                            cancelMetricEdit(activity.id);
-                          }
-                        } else {
-                          handleYesNoToggle(activity.id, on);
-                        }
-                      }}
-                      aria-label={
-                        isNumeric
-                          ? `${activity.name} — toggle on to log a value`
-                          : `Mark ${activity.name} as done`
-                      }
-                    />
                     <div className="min-w-0 flex-1 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <span
@@ -469,6 +461,27 @@ export function DailyChecklist({ activities, logs, today }: DailyChecklistProps)
                         </button>
                       )}
                     </div>
+                    <Switch
+                      checked={switchOn}
+                      onCheckedChange={(on) => {
+                        if (isNumeric) {
+                          if (on) {
+                            startMetricEdit(activity.id);
+                          } else if (state.done) {
+                            handleMetricClear(activity);
+                          } else {
+                            cancelMetricEdit(activity.id);
+                          }
+                        } else {
+                          handleYesNoToggle(activity.id, on);
+                        }
+                      }}
+                      aria-label={
+                        isNumeric
+                          ? `${activity.name} — toggle on to log a value`
+                          : `Mark ${activity.name} as done`
+                      }
+                    />
                   </div>
                 </div>
               );

@@ -20,6 +20,14 @@ type ChartType = "line" | "bar";
 type WeightTrendChartProps = {
   points: WeightChartPoint[];
   today: string;
+  trendLabel?: string;
+  defaultChartType?: ChartType;
+  showTypeToggle?: boolean;
+  showRangeFilters?: boolean;
+  formatValue?: (value: number) => string;
+  formatDisplay?: (value: number) => string;
+  valueUnit?: string;
+  emptyMessage?: string;
 };
 
 const PLOT_HEIGHT = 180;
@@ -74,19 +82,31 @@ function getYScale(values: number[]) {
   };
 }
 
-export function WeightTrendChart({ points, today }: WeightTrendChartProps) {
+export function WeightTrendChart({
+  points,
+  today,
+  trendLabel = "Weight trend",
+  defaultChartType = "line",
+  showTypeToggle = true,
+  showRangeFilters = true,
+  formatValue: formatValueProp,
+  formatDisplay: formatDisplayProp,
+  valueUnit = "kg",
+  emptyMessage = "No entries in this date range.",
+}: WeightTrendChartProps) {
   const [rangePreset, setRangePreset] = useState<RangePreset>("week");
-  const [chartType, setChartType] = useState<ChartType>("line");
+  const [chartType, setChartType] = useState<ChartType>(defaultChartType);
   const [customStart, setCustomStart] = useState(
     format(subDays(parseISO(`${today}T12:00:00`), 13), "yyyy-MM-dd")
   );
   const [customEnd, setCustomEnd] = useState(today);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  const filtered = useMemo(
-    () => filterByRange(points, rangePreset, today, customStart, customEnd),
-    [points, rangePreset, today, customStart, customEnd]
-  );
+  const filtered = useMemo(() => {
+    const sorted = [...points].sort((a, b) => a.date.localeCompare(b.date));
+    if (!showRangeFilters) return sorted;
+    return filterByRange(points, rangePreset, today, customStart, customEnd);
+  }, [points, rangePreset, today, customStart, customEnd, showRangeFilters]);
 
   const scale = useMemo(
     () => (filtered.length ? getYScale(filtered.map((p) => p.value)) : null),
@@ -150,10 +170,25 @@ export function WeightTrendChart({ points, today }: WeightTrendChartProps) {
           .join(" ")
       : "";
 
+  const formatValue = formatValueProp ?? formatWeightKg;
+  const formatDisplay =
+    formatDisplayProp ??
+    (formatValueProp
+      ? (v: number) =>
+          valueUnit ? `${formatValue(v)} ${valueUnit}` : formatValue(v)
+      : formatWeightDisplay);
+  const showHeader = Boolean(trendLabel) || showTypeToggle;
+
   return (
     <div className="space-y-3">
+      {showHeader && (
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-medium text-muted-foreground">Weight trend</p>
+        {trendLabel ? (
+          <p className="text-xs font-medium text-muted-foreground">{trendLabel}</p>
+        ) : (
+          <span />
+        )}
+        {showTypeToggle && (
         <div className="flex rounded-lg border border-stone-200 bg-white p-0.5">
           <button
             type="button"
@@ -180,8 +215,11 @@ export function WeightTrendChart({ points, today }: WeightTrendChartProps) {
             Bar
           </button>
         </div>
+        )}
       </div>
+      )}
 
+      {showRangeFilters && (
       <div className="flex flex-wrap gap-1.5">
         {(
           [
@@ -207,8 +245,9 @@ export function WeightTrendChart({ points, today }: WeightTrendChartProps) {
           </Button>
         ))}
       </div>
+      )}
 
-      {rangePreset === "custom" && (
+      {showRangeFilters && rangePreset === "custom" && (
         <div className="flex flex-wrap items-end gap-2 rounded-lg border border-stone-200 bg-stone-50/80 p-3">
           <div className="space-y-1">
             <Label htmlFor="weight-from" className="text-xs text-muted-foreground">
@@ -242,10 +281,10 @@ export function WeightTrendChart({ points, today }: WeightTrendChartProps) {
 
       {filtered.length === 0 ? (
         <p className="py-8 text-center text-xs text-muted-foreground">
-          No weight entries in this date range.
+          {emptyMessage}
         </p>
       ) : (
-        <div className="rounded-lg border border-stone-200 bg-white p-3">
+        <div className={cn(showRangeFilters && "rounded-lg border border-stone-200 bg-white p-3")}>
           <div className="relative">
             <svg
               viewBox={`0 0 ${plotWidth} ${PLOT_HEIGHT}`}
@@ -279,7 +318,7 @@ export function WeightTrendChart({ points, today }: WeightTrendChartProps) {
                         className="fill-stone-500 text-[9px]"
                         style={{ fontSize: "9px" }}
                       >
-                        {formatWeightKg(tick)}
+                        {formatValue(tick)}
                       </text>
                     </g>
                   );
@@ -396,7 +435,7 @@ export function WeightTrendChart({ points, today }: WeightTrendChartProps) {
                 }}
               >
                 <p className="font-semibold tabular-nums text-emerald-900">
-                  {formatWeightDisplay(hovered.value)}
+                  {formatDisplay(hovered.value)}
                 </p>
                 <p className="text-muted-foreground">
                   {formatDisplayDate(hovered.date)}

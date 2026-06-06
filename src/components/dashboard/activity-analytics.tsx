@@ -10,7 +10,7 @@ import {
   getPreviousMonthRange,
   getTodayString,
 } from "@/lib/utils/dates";
-import { ActivityMetricTrend } from "@/components/activities/activity-metric-trend";
+import { NumericActivityVisual } from "@/components/dashboard/numeric-activity-visual";
 import { isNumericActivity } from "@/lib/activity-metrics";
 import { computeActivityMonthStats } from "@/lib/utils/activity-stats";
 import { computeDayStats } from "@/lib/utils/stats";
@@ -196,50 +196,56 @@ export function ActivityAnalytics({ activities, logs }: ActivityAnalyticsProps) 
         <div>
           <CardTitle>Activity Trends</CardTitle>
           <CardDescription>
-            Heatmap by activity — {monthLabel}
+            {selectedNumeric
+              ? "Heatmap and chart for numeric tracking"
+              : `Heatmap by activity — ${monthLabel}`}
           </CardDescription>
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
-          {(
-            [
-              { id: "this-month" as const, label: "This month" },
-              { id: "past-month" as const, label: "Past month" },
-              { id: "custom" as const, label: "Custom month" },
-            ] as const
-          ).map(({ id, label }) => (
-            <Button
-              key={id}
-              type="button"
-              size="sm"
-              variant={monthPreset === id ? "default" : "outline"}
-              className={cn(
-                "h-8 text-xs",
-                monthPreset === id
-                  ? "bg-emerald-600 hover:bg-emerald-700"
-                  : "border-stone-300"
-              )}
-              onClick={() => setMonthPreset(id)}
-            >
-              {label}
-            </Button>
-          ))}
-        </div>
+        {!selectedNumeric && (
+          <>
+            <div className="flex flex-wrap gap-1.5">
+              {(
+                [
+                  { id: "this-month" as const, label: "This month" },
+                  { id: "past-month" as const, label: "Past month" },
+                  { id: "custom" as const, label: "Custom month" },
+                ] as const
+              ).map(({ id, label }) => (
+                <Button
+                  key={id}
+                  type="button"
+                  size="sm"
+                  variant={monthPreset === id ? "default" : "outline"}
+                  className={cn(
+                    "h-8 text-xs",
+                    monthPreset === id
+                      ? "bg-emerald-600 hover:bg-emerald-700"
+                      : "border-stone-300"
+                  )}
+                  onClick={() => setMonthPreset(id)}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
 
-        {monthPreset === "custom" && (
-          <div className="rounded-lg border border-stone-200 bg-white p-3">
-            <Label htmlFor="heatmap-month" className="text-xs text-muted-foreground">
-              Pick month and year
-            </Label>
-            <Input
-              id="heatmap-month"
-              type="month"
-              value={customMonth}
-              max={getMonthInputValue()}
-              onChange={(e) => setCustomMonth(e.target.value)}
-              className="mt-1 max-w-[200px] border-stone-300 bg-white"
-            />
-          </div>
+            {monthPreset === "custom" && (
+              <div className="rounded-lg border border-stone-200 bg-white p-3">
+                <Label htmlFor="heatmap-month" className="text-xs text-muted-foreground">
+                  Pick month and year
+                </Label>
+                <Input
+                  id="heatmap-month"
+                  type="month"
+                  value={customMonth}
+                  max={getMonthInputValue()}
+                  onChange={(e) => setCustomMonth(e.target.value)}
+                  className="mt-1 max-w-[200px] border-stone-300 bg-white"
+                />
+              </div>
+            )}
+          </>
         )}
       </CardHeader>
 
@@ -279,78 +285,80 @@ export function ActivityAnalytics({ activities, logs }: ActivityAnalyticsProps) 
           </div>
         </div>
 
-        <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-3">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-emerald-800/70">
-              {isAllView
-                ? "Total completions"
-                : selectedNumeric
-                  ? "Days logged"
-                  : "Days completed"}
-            </p>
-            <p className="text-3xl font-bold tabular-nums text-emerald-900">
-              {cumulativeScore}
-              <span className="ml-1 text-sm font-normal text-emerald-700">
-                in {monthLabel}
-              </span>
-            </p>
-          </div>
-          {!isAllView && selected && (
-            <Badge variant="secondary">{selected.category}</Badge>
-          )}
-        </div>
-
-        <div className="rounded-lg border border-stone-200 bg-white p-4">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <p className="text-sm font-medium text-emerald-950">
-              {monthLabel} heatmap
-            </p>
-            {isAllView && (
-              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                <span>Less</span>
-                <div className="size-3 rounded-sm bg-white ring-1 ring-stone-200" />
-                <div className="size-3 rounded-sm bg-emerald-200" />
-                <div className="size-3 rounded-sm bg-emerald-400" />
-                <div className="size-3 rounded-sm bg-emerald-500" />
-                <div className="size-3 rounded-sm bg-emerald-700" />
-                <span>More</span>
+        {selectedNumeric && selected ? (
+          <NumericActivityVisual
+            activity={selected}
+            logs={logs}
+            today={today}
+          />
+        ) : (
+          <>
+            <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-3">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-emerald-800/70">
+                  {isAllView ? "Total completions" : "Days completed"}
+                </p>
+                <p className="text-3xl font-bold tabular-nums text-emerald-900">
+                  {cumulativeScore}
+                  <span className="ml-1 text-sm font-normal text-emerald-700">
+                    in {monthLabel}
+                  </span>
+                </p>
               </div>
-            )}
-          </div>
-          <div className="mb-1 grid grid-cols-7 gap-1.5">
-            {dayLabels.map((label) => (
-              <div
-                key={label}
-                className="text-center text-[10px] font-medium text-muted-foreground"
-              >
-                {label}
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-1.5">
-            {heatCells.map((cell, i) => {
-              if (!cell) {
-                return <div key={`empty-${i}`} className="aspect-square" />;
-              }
-              const highlightToday =
-                isCurrentMonthView && cell.date === today;
-              return (
-                <div
-                  key={cell.date}
-                  title={cell.label}
-                  className={cn(
-                    "aspect-square rounded-md transition-colors",
-                    cell.colorClass,
-                    highlightToday && "ring-2 ring-emerald-700 ring-offset-1"
-                  )}
-                />
-              );
-            })}
-          </div>
-        </div>
+              {!isAllView && selected && (
+                <Badge variant="secondary">{selected.category}</Badge>
+              )}
+            </div>
 
-        {!isAllView && selectedNumeric && selected && (
-          <ActivityMetricTrend activity={selected} logs={logs} />
+            <div className="rounded-lg border border-stone-200 bg-white p-4">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <p className="text-sm font-medium text-emerald-950">
+                  {monthLabel} heatmap
+                </p>
+                {isAllView && (
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <span>Less</span>
+                    <div className="size-3 rounded-sm bg-white ring-1 ring-stone-200" />
+                    <div className="size-3 rounded-sm bg-emerald-200" />
+                    <div className="size-3 rounded-sm bg-emerald-400" />
+                    <div className="size-3 rounded-sm bg-emerald-500" />
+                    <div className="size-3 rounded-sm bg-emerald-700" />
+                    <span>More</span>
+                  </div>
+                )}
+              </div>
+              <div className="mb-1 grid grid-cols-7 gap-1.5">
+                {dayLabels.map((label) => (
+                  <div
+                    key={label}
+                    className="text-center text-[10px] font-medium text-muted-foreground"
+                  >
+                    {label}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1.5">
+                {heatCells.map((cell, i) => {
+                  if (!cell) {
+                    return <div key={`empty-${i}`} className="aspect-square" />;
+                  }
+                  const highlightToday =
+                    isCurrentMonthView && cell.date === today;
+                  return (
+                    <div
+                      key={cell.date}
+                      title={cell.label}
+                      className={cn(
+                        "aspect-square rounded-md transition-colors",
+                        cell.colorClass,
+                        highlightToday && "ring-2 ring-emerald-700 ring-offset-1"
+                      )}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
