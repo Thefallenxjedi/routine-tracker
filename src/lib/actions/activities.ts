@@ -73,7 +73,7 @@ export async function createActivity(
       return { error: error.message };
     }
 
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     revalidatePath("/activities");
     return { success: true };
   } catch {
@@ -117,7 +117,7 @@ export async function updateActivity(
       return { error: error.message };
     }
 
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     revalidatePath("/activities");
     return { success: true };
   } catch {
@@ -139,7 +139,7 @@ export async function archiveActivity(id: string) {
       return { error: error.message };
     }
 
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     revalidatePath("/activities");
     return { success: true };
   } catch {
@@ -161,7 +161,7 @@ export async function restoreActivity(id: string) {
       return { error: error.message };
     }
 
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     revalidatePath("/activities");
     return { success: true };
   } catch {

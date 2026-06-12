@@ -6,7 +6,7 @@ import { LayoutDashboard, ListChecks, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/", label: "Home", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/activities", label: "Activities", icon: ListChecks },
   { href: "/settings", label: "Settings", icon: Settings },
 ] as const;

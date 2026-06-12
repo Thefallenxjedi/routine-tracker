@@ -26,7 +26,7 @@ export async function saveWeight(date: string, weightKg: number) {
       return { error: error.message };
     }
 
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     revalidatePath("/settings");
     return { success: true };
   } catch {

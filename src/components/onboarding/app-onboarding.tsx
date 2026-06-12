@@ -103,8 +103,8 @@ export function AppOnboarding({ userId }: AppOnboardingProps) {
   const startTour = useCallback(() => {
     setStepIndex(0);
     setActive(true);
-    if (pathname !== "/") {
-      router.push("/");
+    if (pathname !== "/dashboard") {
+      router.push("/dashboard");
     }
   }, [pathname, router]);
 
@@ -182,7 +182,7 @@ export function AppOnboarding({ userId }: AppOnboardingProps) {
   function goNext() {
     if (stepIndex >= total - 1) {
       complete();
-      router.push("/");
+      router.push("/dashboard");
       return;
     }
     const next = ONBOARDING_STEPS[stepIndex + 1];

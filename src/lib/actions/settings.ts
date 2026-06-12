@@ -20,7 +20,7 @@ export async function updateWeightAutomatic(automatic: boolean) {
       return { error: error.message };
     }
 
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     revalidatePath("/settings");
     return { success: true, weightAutomatic: automatic };
   } catch {
