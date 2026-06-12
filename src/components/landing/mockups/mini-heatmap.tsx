@@ -38,25 +38,27 @@ export function MiniHeatmap({
       <p className="text-[10px] font-medium uppercase tracking-wide text-stone-500">
         {title}
       </p>
-      <div className="mt-2 grid grid-cols-7 gap-1">
+      <div className="mt-2 grid grid-cols-7 gap-0.5 sm:gap-1">
         {PATTERN.map((level, i) => (
           <div
             key={i}
             className={cn(
-              "rounded-sm",
-              compact ? "aspect-square" : "h-3.5",
+              "aspect-square rounded-sm",
+              !compact && "h-3.5",
               HEAT_LEVELS[level]
             )}
           />
         ))}
       </div>
-      <div className="mt-2 flex items-center justify-end gap-0.5 text-[8px] text-stone-400">
-        <span>Less</span>
-        {HEAT_LEVELS.slice(1).map((c, i) => (
-          <div key={i} className={cn("size-2 rounded-[2px]", c)} />
-        ))}
-        <span>More</span>
-      </div>
+      {!compact && (
+        <div className="mt-2 flex items-center justify-end gap-0.5 text-[8px] text-stone-400">
+          <span>Less</span>
+          {HEAT_LEVELS.slice(1).map((c, i) => (
+            <div key={i} className={cn("size-2 rounded-[2px]", c)} />
+          ))}
+          <span>More</span>
+        </div>
+      )}
     </div>
   );
 }

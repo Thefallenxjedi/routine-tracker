@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 const BARS = [42, 68, 55, 82, 71, 90, 64] as const;
 const DAYS = ["M", "T", "W", "T", "F", "S", "S"] as const;
-const CHART_HEIGHT = 64;
+const CHART_HEIGHT = 72;
 
 type MiniChartProps = {
   title?: string;
@@ -20,25 +20,27 @@ export function MiniChart({
         className
       )}
     >
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-baseline justify-between gap-2">
         <p className="text-[10px] font-medium uppercase tracking-wide text-stone-500">
           {title}
         </p>
-        <p className="text-xs font-semibold tabular-nums text-emerald-700">78%</p>
+        <p className="shrink-0 text-xs font-semibold tabular-nums text-emerald-700">
+          78%
+        </p>
       </div>
       <div
-        className="mt-3 flex items-end justify-between gap-1"
+        className="mt-3 flex items-end justify-between gap-0.5 sm:gap-1"
         style={{ height: CHART_HEIGHT }}
       >
         {BARS.map((pct, i) => {
-          const barHeight = Math.max(6, Math.round((pct / 100) * CHART_HEIGHT));
+          const barHeight = Math.max(8, Math.round((pct / 100) * CHART_HEIGHT));
           return (
             <div
               key={i}
-              className="flex h-full flex-1 flex-col items-center justify-end gap-1"
+              className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
             >
               <div
-                className="w-full max-w-[18px] rounded-sm bg-emerald-500"
+                className="w-full min-w-[6px] max-w-[28px] rounded-sm bg-emerald-500"
                 style={{ height: barHeight }}
               />
               <span className="text-[8px] text-stone-400">{DAYS[i]}</span>

@@ -1,5 +1,4 @@
 import { MockupShell } from "@/components/landing/mockup-shell";
-import { MiniHeatmap } from "@/components/landing/mockups/mini-heatmap";
 import { cn } from "@/lib/utils";
 
 const MONTH_HEAT = [
@@ -22,12 +21,12 @@ export function HeatmapMockup() {
   return (
     <MockupShell>
       <div className="rounded-xl border border-stone-200/80 bg-white p-4 shadow-sm">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-stone-900">Activity Trends</p>
             <p className="text-xs text-stone-500">June 2026</p>
           </div>
-          <div className="flex gap-1">
+          <div className="flex flex-wrap gap-1">
             {["All", "Run", "Read"].map((pill, i) => (
               <span
                 key={pill}
@@ -43,10 +42,10 @@ export function HeatmapMockup() {
             ))}
           </div>
         </div>
-        <div className="mt-3 grid grid-cols-7 gap-1.5">
-          {["M", "T", "W", "T", "F", "S", "S"].map((d) => (
+        <div className="mt-3 grid grid-cols-7 gap-1 sm:gap-1.5">
+          {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
             <span
-              key={d}
+              key={`${d}-${i}`}
               className="text-center text-[8px] font-medium text-stone-400"
             >
               {d}
@@ -59,11 +58,19 @@ export function HeatmapMockup() {
             />
           ))}
         </div>
-        <p className="mt-3 text-center text-xs font-semibold text-emerald-800">
-          24 days completed this month
-        </p>
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <p className="text-xs font-semibold text-emerald-800">
+            24 days completed this month
+          </p>
+          <div className="flex shrink-0 items-center gap-0.5 text-[8px] text-stone-400">
+            <span>Less</span>
+            {LEVELS.slice(1).map((c, i) => (
+              <div key={i} className={cn("size-2 rounded-[2px]", c)} />
+            ))}
+            <span>More</span>
+          </div>
+        </div>
       </div>
-      <MiniHeatmap className="mt-3" title="Per-activity view" />
     </MockupShell>
   );
 }
