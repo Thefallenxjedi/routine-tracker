@@ -1,10 +1,6 @@
 import Papa from "papaparse";
 import { format, isValid, parseISO } from "date-fns";
-import {
-  inferActivityFromColumn,
-  parseCellToLog,
-  parseManifestActivity,
-} from "@/lib/import/infer-activity";
+import { inferActivityFromColumn, parseCellToLog } from "@/lib/import/infer-activity";
 import type { CsvImportPreview, ImportLogEntry } from "@/lib/import/types";
 
 export const MAX_CSV_BYTES = 500 * 1024;
@@ -42,55 +38,15 @@ function normalizeDateString(raw: string): string | null {
   return null;
 }
 
-function isManifestHeader(row: string[]): boolean {
-  if (row.length < 2) return false;
-  const first = row[0]?.trim().toLowerCase();
-  return first === "name" || first === "activity";
-}
-
 function isMatrixHeader(row: string[]): boolean {
   const first = row[0]?.trim() ?? "";
   return DATE_HEADER_PATTERN.test(first);
-}
-
-function rowsToObjects(headers: string[], rows: string[][]): Record<string, string>[] {
-  return rows.map((row) => {
-    const obj: Record<string, string> = {};
-    headers.forEach((h, i) => {
-      obj[h.trim().toLowerCase()] = row[i]?.trim() ?? "";
-    });
-    return obj;
-  });
 }
 
 function computeDateRange(logs: ImportLogEntry[]) {
   if (logs.length === 0) return null;
   const dates = logs.map((l) => l.date).sort();
   return { start: dates[0], end: dates[dates.length - 1] };
-}
-
-function parseManifestRows(
-  headers: string[],
-  dataRows: string[][]
-): CsvImportPreview {
-  const warnings: string[] = [];
-  const objects = rowsToObjects(headers, dataRows);
-  const activities = [];
-
-  for (const row of objects) {
-    const { activity, warning } = parseManifestActivity(row);
-    if (warning) warnings.push(warning);
-    if (activity) activities.push(activity);
-  }
-
-  return {
-    activities,
-    logs: [],
-    warnings,
-    format: "manifest",
-    dateRange: null,
-    skippedRows: 0,
-  };
 }
 
 function parseMatrixRows(
@@ -136,7 +92,7 @@ function parseMatrixRows(
       continue;
     }
 
-    activityHeaders.forEach((header, i) => {
+    activityHeaders.forEach((_, i) => {
       const activity = activities[i];
       const cell = row[i + 1] ?? "";
       const parsed = parseCellToLog(cell, activity);
@@ -152,7 +108,9 @@ function parseMatrixRows(
   }
 
   if (logs.length === 0 && dataRows.length > 0) {
-    warnings.push("No log entries found — check that cells contain yes/x or numbers");
+    warnings.push(
+      "No log entries found — use yes/x/1 for habits or numbers for metrics"
+    );
   }
 
   return {
@@ -213,22 +171,12 @@ export function parseCsvText(text: string): CsvImportPreview {
   const headers = rows[0].map((h) => h.trim());
   const dataRows = rows.slice(1);
 
-  if (isManifestHeader(headers)) {
-    const result = parseManifestRows(headers, dataRows);
-    if (result.activities.length > 0 && result.logs.length === 0) {
-      result.warnings.push(
-        "Manifest format detected — activities will be created without historical logs. Use a date-column spreadsheet to import logs."
-      );
-    }
-    return result;
-  }
-
   if (!isMatrixHeader(headers)) {
     return {
       activities: [],
       logs: [],
       warnings: [
-        'First column must be "Date" for habit spreadsheets, or use manifest headers: name,category,tracking_type,metric_key,custom_unit',
+        'First column must be "Date". Add one column per activity (any names you want).',
       ],
       format: "matrix",
       dateRange: null,

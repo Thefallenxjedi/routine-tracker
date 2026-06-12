@@ -106,7 +106,7 @@ Open [http://localhost:3000](http://localhost:3000).
 1. In Google Sheets, use **dates in the first column** and **one column per activity** (habit tracker layout).
 2. **File → Download → Comma-separated values (.csv)**
 3. In Routine, open **Activities → Import CSV**
-4. Upload the file, review the preview, and confirm
+4. Upload the file, **map each activity to a category** in the preview, then confirm
 
 Download the sample template from the import dialog or [`public/templates/routine-import-template.csv`](public/templates/routine-import-template.csv).
 
@@ -114,9 +114,9 @@ Download the sample template from the import dialog or [`public/templates/routin
 |------------|---------|
 | empty | no entry that day |
 | `x`, `yes`, `1`, `done` | habit completed |
-| number | numeric metric (steps, minutes, etc.) |
+| number | numeric column (edit metric unit later in Activities) |
 
-Optional header hints: `Morning run [Health]` for category, `Read (minutes)` for unit.
+Use plain activity names as column headers (e.g. `Morning run`, `Steps`). Category is chosen in the import preview, not in the spreadsheet.
 
 ## Deploy to Vercel
 
