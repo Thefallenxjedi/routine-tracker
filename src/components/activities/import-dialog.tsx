@@ -163,18 +163,47 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
 
         <div className="space-y-4">
           <div className="rounded-lg border border-stone-200 bg-stone-50/80 p-3 text-xs text-stone-700">
-            <p className="font-semibold text-stone-900">How to fill your sheet</p>
+            <p className="font-semibold text-stone-900">How to Fill Your Sheet</p>
+            <p className="mt-2">
+              Your sheet should contain one row per day.
+            </p>
             <ul className="mt-2 list-inside list-disc space-y-1">
               <li>
-                Row 1: <strong>Date</strong> in column A, then any activity names
+                <strong>Column A:</strong> Enter the date.
               </li>
               <li>
-                Done: <strong>yes</strong>, <strong>x</strong>, <strong>1</strong>,{" "}
-                <strong>done</strong>
+                <strong>Remaining columns:</strong> Add the activities or metrics
+                you want to track (e.g. Exercise, Reading, Water Intake, Weight).
               </li>
-              <li>Not done: leave the cell empty</li>
-              <li>Numbers: type the value only (Routine detects numeric columns)</li>
             </ul>
+            <p className="mt-3 font-medium text-stone-800">For each day:</p>
+            <ul className="mt-1 list-inside list-disc space-y-1">
+              <li>
+                Enter <strong>Yes</strong> if you completed an activity.
+              </li>
+              <li>
+                Enter <strong>No</strong> or leave the cell <strong>empty</strong>{" "}
+                if you did not complete it.
+              </li>
+              <li>
+                For activities with measurable values, enter the{" "}
+                <strong>number</strong> directly.
+              </li>
+            </ul>
+            <p className="mt-3 font-medium text-stone-800">
+              Examples of numeric activities:
+            </p>
+            <ul className="mt-1 list-inside list-disc space-y-0.5">
+              <li>Water Intake → 3</li>
+              <li>Sleep Hours → 8</li>
+              <li>Weight → 72.5</li>
+              <li>Steps Walked → 8500</li>
+              <li>Pages Read → 25</li>
+            </ul>
+            <p className="mt-3">
+              Routine automatically detects numeric columns and tracks them as
+              metrics. You can define goals and units for these metrics later.
+            </p>
           </div>
 
           <a
