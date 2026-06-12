@@ -23,9 +23,12 @@ export const metadata: Metadata = {
   description:
     "Track daily activities and habits with yes/no or numeric metrics.",
   icons: {
-    icon: [{ url: "/logo.png", type: "image/png", sizes: "512x512" }],
-    apple: [{ url: "/logo.png", type: "image/png", sizes: "512x512" }],
-    shortcut: "/logo.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "180x180" }],
+    shortcut: "/favicon.ico",
   },
   openGraph: {
     title: "Routine — Activity Tracker",
