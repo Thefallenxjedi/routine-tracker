@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { FileUp, Plus } from "lucide-react";
 import { MetricsReference } from "@/components/activities/metrics-reference";
 import { ActivityFormDialog } from "@/components/activities/activity-form-dialog";
+import { ImportDialog } from "@/components/activities/import-dialog";
 import { ActivityRow } from "@/components/activities/activity-row";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -46,17 +48,35 @@ export function ActivityList({
   logs,
 }: ActivityListProps) {
   const [createOpen, setCreateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Activity | null>(null);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-emerald-950">
-          Activities
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Create and manage your daily activities
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-emerald-950">
+            Activities
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Create and manage your daily activities
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="border-stone-300 text-emerald-800"
+            onClick={() => setImportOpen(true)}
+          >
+            <FileUp className="size-4" />
+            Import CSV
+            <Badge className="ml-1 bg-amber-100 text-[10px] text-amber-900 hover:bg-amber-100">
+              Beta
+            </Badge>
+          </Button>
+          <AddActivityButton onClick={() => setCreateOpen(true)} />
+        </div>
       </div>
 
       <Card className="border-stone-200 bg-stone-50/80">
@@ -70,12 +90,27 @@ export function ActivityList({
           {active.length === 0 ? (
             <div className="flex flex-col items-center gap-4 py-8">
               <p className="text-center text-sm text-muted-foreground">
-                No active activities yet. Create your first one to start tracking.
+                No active activities yet. Import from a spreadsheet or create
+                your first one manually.
               </p>
-              <AddActivityButton
-                onClick={() => setCreateOpen(true)}
-                className="bg-emerald-600 hover:bg-emerald-700"
-              />
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-emerald-300 text-emerald-800"
+                  onClick={() => setImportOpen(true)}
+                >
+                  <FileUp className="size-4" />
+                  Import CSV
+                  <Badge className="ml-1 bg-amber-100 text-[10px] text-amber-900 hover:bg-amber-100">
+                    Beta
+                  </Badge>
+                </Button>
+                <AddActivityButton
+                  onClick={() => setCreateOpen(true)}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                />
+              </div>
             </div>
           ) : (
             <>
@@ -126,6 +161,7 @@ export function ActivityList({
 
       <MetricsReference />
 
+      <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
       <ActivityFormDialog open={createOpen} onOpenChange={setCreateOpen} />
       <ActivityFormDialog
         open={!!editing}

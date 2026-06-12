@@ -10,6 +10,7 @@ Track daily activities and habits with yes/no or numeric metrics (km, steps, min
 - **Streaks** — per-activity consecutive day tracking
 - **Analytics** — daily progress, weekly bar chart, monthly heatmap
 - **Activity management** — create, edit, and archive activities
+- **CSV import (beta)** — upload a spreadsheet exported from Google Sheets to prefill activities and historical logs
 
 ## Tech Stack
 
@@ -99,6 +100,23 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+## Import from Google Sheets (beta)
+
+1. In Google Sheets, use **dates in the first column** and **one column per activity** (habit tracker layout).
+2. **File → Download → Comma-separated values (.csv)**
+3. In Routine, open **Activities → Import CSV**
+4. Upload the file, review the preview, and confirm
+
+Download the sample template from the import dialog or [`public/templates/routine-import-template.csv`](public/templates/routine-import-template.csv).
+
+| Cell value | Meaning |
+|------------|---------|
+| empty | no entry that day |
+| `x`, `yes`, `1`, `done` | habit completed |
+| number | numeric metric (steps, minutes, etc.) |
+
+Optional header hints: `Morning run [Health]` for category, `Read (minutes)` for unit.
 
 ## Deploy to Vercel
 
